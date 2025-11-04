@@ -69,8 +69,32 @@
     navigator.geolocation.getCurrentPosition(pos=>{ const {latitude, longitude, accuracy}=pos.coords; state.gps={lat:latitude, lon:longitude, accuracy};
       (state.qr?.champs_entree||[]).forEach(f=>{ if(f.type==='gps'){ const el=document.getElementById(f.id); if(el) el.textContent=`${latitude}, ${longitude} (±${Math.round(accuracy)} m)`; } }); compilePrompt(); },
       err=> toast(t('geolocFail')+err.message), {enableHighAccuracy:true, timeout:10000}); });
-  async function ensureCamera(){ if(state.stream) return; try{ state.stream=await navigator.mediaDevices.getUserMedia({ video:{ facingMode:'environment' } }); videoEl.srcObject=state.stream; }catch(e){ toast(t('cannotAccessCamera')); } }
-  cameraBtn.addEventListener('click', ensureCamera);
+  async function ensureCamera(){
+  const isSecure = window.isSecureContext || location.hostname === 'localhost';
+  if(!isSecure){
+    alert("Impossible d'accéder à la caméra. Utilise HTTPS (GitHub Pages) ou localhost.");
+    return;
+  }
+  if(!navigator.mediaDevices?.getUserMedia){
+    alert("Caméra non disponible sur ce navigateur.");
+    return;
+  }
+  if (state.stream) return; // déjà actif
+
+  // iOS/Safari : indispensable pour l'autoplay
+  videoEl.setAttribute('playsinline','');
+  videoEl.muted = true;
+
+  try{
+    const constraints = { video: { facingMode: { ideal: 'environment' } }, audio: false };
+    state.stream = await navigator.mediaDevices.getUserMedia(constraints);
+    videoEl.srcObject = state.stream;
+    try { await videoEl.play(); } catch(_) {}
+  }catch(e){
+    alert("Impossible d'accéder à la caméra. Vérifie les autorisations et l'utilisation d'HTTPS.\n" + (e.message || ""));
+  }
+}
+
   async function detectLoop(){ if(!('BarcodeDetector' in window)) return toast(t('noBarcode')); if(!detector) detector=new window.BarcodeDetector({formats:['qr_code']});
     for(let i=0;i<300;i++){ if(!videoEl.srcObject) break; const bmp=await createImageBitmap(videoEl); try{ const codes=await detector.detect(bmp); if(codes&&codes.length){ handleQrRaw(codes[0].rawValue); break; } }catch(e){} await new Promise(r=>setTimeout(r,30)); } }
   scanBtn.addEventListener('click', async()=>{ await ensureCamera(); await new Promise(r=>setTimeout(r,200)); detectLoop(); });
