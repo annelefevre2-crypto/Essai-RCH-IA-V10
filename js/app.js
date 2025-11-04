@@ -46,71 +46,81 @@
   // ------------------------------------------------------
   // Caméra via QrScanner
   // ------------------------------------------------------
-  async function startCamera() {
-    hideError();
+async function startCamera() {
+  hideError();
+  try {
+    const QrScanner = window.__QrScanner;
+    if (!QrScanner) {
+      showError("QrScanner non chargé (vérifie le <script type='module'> dans index.html).");
+      return;
+    }
+
+    // 1) Pré-permission pour déclencher la pop-up (NotAllowedError si refus)
+    const preStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: "environment" } },
+      audio: false
+    });
+    // arrêter immédiatement (on ne l'utilise pas directement avec QrScanner)
+    preStream.getTracks().forEach(t => t.stop());
+
+    // 2) Nettoyer une éventuelle instance précédente
+    if (window.__scanner) {
+      await window.__scanner.stop();
+      window.__scanner.destroy();
+      window.__scanner = null;
+    }
+
+    // 3) Créer le scanner (callback de décodage)
+    const scanner = new QrScanner(
+      videoEl,
+      (result) => {
+        const data = result?.data || result;
+        if (!data) return;
+        stopCamera().finally(() => {
+          handleQRContent(data);
+          showSuccess();
+        });
+      },
+      { highlightScanRegion: true, highlightCodeOutline: true }
+    );
+
+    // 4) Lister les caméras après permission (labels disponibles)
+    let backId = null;
     try {
-      const QrScanner = window.__QrScanner;
-      if (!QrScanner) {
-        showError("QrScanner non chargé. Vérifiez le <script type='module'> dans index.html.");
-        return;
-      }
-
-      // Stop + destroy instance précédente si elle existe
-      if (window.__scanner) {
-        await window.__scanner.stop();
-        window.__scanner.destroy();
-        window.__scanner = null;
-      }
-
-      // Créer un nouveau scanner (callback de décodage)
-      const scanner = new QrScanner(
-        videoEl,
-        (result) => {
-          const data = result?.data || result;
-          if (!data) return;
-          // 1er QR lu → fermer caméra, traiter QR, message succès
-          stopCamera().finally(() => {
-            handleQRContent(data);
-            showSuccess();
-          });
-        },
-        {
-          highlightScanRegion: true,
-          highlightCodeOutline: true,
-          // Optionnel: on peut limiter à 30 FPS si besoin (perf)
-          // maxScansPerSecond: 25,
-        }
-      );
-
-      // Choisir la caméra arrière si dispo
-      const cams = await QrScanner.listCameras(true).catch(() => []);
+      const cams = await QrScanner.listCameras(true);
       if (Array.isArray(cams) && cams.length) {
-        const back = cams.find((c) => /back|rear|environment/i.test(c.label)) || cams[0];
-        await scanner.start(back.id);
-      } else {
-        await scanner.start();
+        const back = cams.find(c => /back|rear|environment/i.test(c.label)) || cams[0];
+        backId = back.id;
       }
+    } catch (_) { /* on tolère l'échec, on démarrera sans id */ }
 
-      window.__scanner = scanner;
-      console.log("📷 Caméra activée avec QrScanner");
-    } catch (e) {
-      console.error("Erreur startCamera:", e);
-      showError(t("cannotAccessCamera"));
-    }
-  }
+    // 5) Démarrer le scanner (avec deviceId si dispo)
+    if (backId) { await scanner.start(backId); }
+    else        { await scanner.start(); }
 
-  async function stopCamera() {
-    try {
-      if (window.__scanner) {
-        await window.__scanner.stop();
-        window.__scanner.destroy();
-        window.__scanner = null;
-        console.log("📷 Caméra arrêtée");
-      }
-    } catch (e) {
-      console.warn("Erreur à l'arrêt caméra:", e);
-    }
+    window.__scanner = scanner;
+    console.log("📷 Caméra activée (pré-permission OK, QrScanner démarré).");
+  } catch (e) {
+    // Affiche l’erreur réelle (NotAllowedError, NotFoundError, etc.)
+    const msg = e && e.message ? e.message : String(e);
+    showError("Impossible d'accéder à la caméra : " + msg);
+    console.error("startCamera error:", e);
   }
+}
+
+async function stopCamera() {
+  try {
+    if (window.__scanner) {
+      await window.__scanner.stop();
+      window.__scanner.destroy();
+      window.__scanner = null;
+      console.log("📷 Caméra arrêtée.");
+    }
+  } catch (e) {
+    console.warn("Erreur à l'arrêt caméra:", e);
+  }
+}
+
 
   // Bouton "Scanner QR Code" : s'assurer que le scanner tourne
   async function detectQRCode() {
