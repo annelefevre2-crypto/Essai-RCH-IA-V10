@@ -74,12 +74,17 @@ html, body {
 }
 
 /* ---------- VIDEO ---------- */
+/* Conteneur vidéo (montré seulement caméra active) */
 .video-container {
   position: relative;
-  background: #cfe8ff;
+  background: #e6f1fb;         /* bleu clair ENSOSP */
   border-radius: 12px;
   overflow: hidden;
+  min-height: 260px;           /* hauteur quand visible */
 }
+
+.hidden { display: none !important; }
+
 
 video {
   width: 100%;
