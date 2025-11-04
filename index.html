@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Mémento opérationnel IA – RCH</title>
   <link rel="stylesheet" href="css/styles.css" />
 </head>
@@ -12,7 +12,7 @@
       <img src="assets/logo-ensosp.png" alt="ENSOSP" class="logo"/>
       <div class="titles">
         <h1>Mémento opérationnel IA – RCH</h1>
-        <div class="subtitle">Version <span id="appVersion">V3</span></div>
+        <div class="subtitle">Version <span id="appVersion">V3.6</span></div>
       </div>
     </div>
     <div class="lang-switch">
@@ -26,7 +26,7 @@
 
   <main class="container">
     <section class="left-col">
-      <div class="control-stack">
+      <div class="control-stack sticky-controls">
         <button id="resetBtn" class="btn ghost" data-i18n="reset">Réinitialiser</button>
         <button id="cameraBtn" class="btn" data-i18n="activateCamera">Activer la caméra</button>
         <button id="scanBtn" class="btn" data-i18n="captureQr">Capturer QR Code</button>
@@ -34,13 +34,21 @@
       </div>
 
       <div class="camera-area" id="cameraArea">
-        <video id="camera" autoplay playsinline></video>
+        <div class="scan-hint" data-i18n="scanHint">Cadrez le QR code dans la zone vidéo, puis appuyez sur “Capturer QR Code”.</div>
+        <div class="video-wrap">
+          <video id="camera" autoplay playsinline muted></video>
+          <!-- Fixed, sober corner overlay -->
+          <div class="scan-overlay">
+            <div class="corner tl"></div>
+            <div class="corner tr"></div>
+            <div class="corner bl"></div>
+            <div class="corner br"></div>
+          </div>
+        </div>
         <canvas id="qrCanvas" class="hidden"></canvas>
         <div class="fallback">
           <label for="qrFile" data-i18n="importImageLabel">Ou importer une image de QR :</label>
           <input type="file" id="qrFile" accept="image/*" />
-          <textarea id="rawQrInput" placeholder='Collez ici le JSON du QR si nécessaire'></textarea>
-          <button id="parseRawBtn" class="btn ghost small" data-i18n="parseJson">Parser JSON</button>
         </div>
       </div>
 
@@ -48,11 +56,8 @@
     </section>
 
     <section class="right-col">
-      <div class="meta">
-        <div class="meta-row">
-          <strong data-i18n="dynamicDisplay">Fiche&nbsp;:</strong>
-          <span id="ficheMeta">Catégorie – Titre – Version – QR CODE flashé</span>
-        </div>
+      <div class="meta meta-single-line">
+        <span id="ficheMeta">Catégorie – Titre – Version du QR code flashé</span>
       </div>
 
       <div class="info-block">
@@ -73,7 +78,7 @@
   </main>
 
   <footer class="app-footer">
-    <div class="footnote">© ENSOSP — Cne Eddy Fischer - Cdt Anne Tirelle</div>
+    <div class="footnote">© ENSOSP — Cne Eddy Fischer – Cdt Anne Tirelle</div>
   </footer>
 
   <script src="js/i18n.js"></script>

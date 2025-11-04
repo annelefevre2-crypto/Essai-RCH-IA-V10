@@ -1,11 +1,6 @@
-# Mémento opérationnel IA – RCH (V3)
-
-Pack **application terrain** sans générateur de QR. Les QR JSON sont produits via ChatGPT.
-
-## Démarrer
-- Ouvrir `index.html` dans un navigateur compatible **BarcodeDetector** (Chrome/Edge Android/desktop).  
-- Boutons : Réinitialiser / Activer la caméra / Capturer QR Code / Acquisition de la position.  
-- Les champs décrits par le QR sont générés, le **prompt IA** est compilé et envoyé via les boutons IA (verts/orange).
-
-## Sécurité
-100% client-side, pas d’envoi à un serveur par défaut.
+# Mémento opérationnel IA – RCH (V3.6)
+- Ajout d’un **cadre de visée** (4 coins bleus ENSOSP) superposé à la vidéo, fixe et sobre.
+- Message de guidage au-dessus de la vidéo (FR/EN via i18n).
+- Pas de collage/parse de JSON, import image QR OK.
+- Correctifs caméra (HTTPS/localhost, iOS playsinline+muted) et responsive mobile conservés.
+- Footer : « © ENSOSP — Cne Eddy Fischer – Cdt Anne Tirelle ».
