@@ -243,40 +243,63 @@
   }
 
   // ---------- Reset total ----------
-  function resetApp() {
-    stopCamera();
-    hideScanUI();
-    hideError();
-    state.qr = null;
+// ------------------------------------------------------
+// 🔄 Réinitialisation complète de l'application
+// ------------------------------------------------------
+function resetApp() {
+  // 1️⃣ Arrêter la caméra et masquer la zone de scan
+  stopCamera();
+  hideScanUI();
+  hideError();
 
-    // Méta & infos
-    ficheMeta.textContent = "Catégorie – Titre – Version du QR code flashé";
-    infosComplementaires.innerHTML = "";
+  // 2️⃣ Réinitialiser les variables d'état
+  state.qr = null;
 
-    // Prompt
-    compiledPrompt.value = "";
+  // 3️⃣ Réinitialiser les métadonnées affichées
+  if (ficheMeta) ficheMeta.textContent = "Catégorie – Titre – Version du QR code flashé";
+  if (infosComplementaires) infosComplementaires.innerHTML = "";
 
-    // Boutons IA
-    iaButtons.innerHTML = "";
+  // 4️⃣ Vider la zone de prompt
+  if (compiledPrompt) compiledPrompt.value = "";
 
-    // Effacer fichier importé
-    if (qrFile) qrFile.value = "";
+  // 5️⃣ Supprimer les boutons IA générés
+  if (iaButtons) iaButtons.innerHTML = "";
 
-    // Effacer champs potentiels (si tu en ajoutes dynamiquement ailleurs)
-    document.querySelectorAll("input, textarea, select").forEach((el) => {
-      const id = el.id || "";
-      if (id === "langSel" || id === "qrFile") return;
-      if (el.type === "checkbox") el.checked = false;
-      else if (el.tagName === "SELECT") el.selectedIndex = 0;
-      else el.value = "";
-    });
+  // 6️⃣ Effacer le contenu des champs d’entrée du formulaire
+  document.querySelectorAll("input, textarea, select").forEach((el) => {
+    const id = el.id || "";
+    // On ne vide pas le sélecteur de langue
+    if (id === "langSel") return;
 
-    if (successMsg) hideEl(successMsg);
-    if (lastImportedObjectURL) {
-      URL.revokeObjectURL(lastImportedObjectURL);
-      lastImportedObjectURL = null;
-    }
+    // Réinitialisation spécifique selon le type
+    if (el.type === "checkbox") el.checked = false;
+    else if (el.tagName === "SELECT") el.selectedIndex = 0;
+    else el.value = "";
+  });
+
+  // 7️⃣ Effacer la sélection de fichier QR (import image)
+  const fileInputs = [
+    document.getElementById("qrFile"),
+    document.getElementById("fileInput")
+  ].filter(Boolean);
+  fileInputs.forEach(input => input.value = "");
+
+  // 8️⃣ Révoquer un éventuel ObjectURL d’image importée
+  if (lastImportedObjectURL) {
+    URL.revokeObjectURL(lastImportedObjectURL);
+    lastImportedObjectURL = null;
   }
+
+  // 9️⃣ Masquer les messages temporaires
+  if (successMsg) hideEl(successMsg);
+
+  console.log("♻️ Application réinitialisée");
+}
+setTimeout(() => {
+  showSuccess();
+  successMsg.textContent = "✅ Interface réinitialisée";
+}, 150);
+
 
   // ---------- Version UI ----------
   document.addEventListener("DOMContentLoaded", () => {
