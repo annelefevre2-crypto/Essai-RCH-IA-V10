@@ -26,6 +26,27 @@
   <main class="container">
     <section class="scanner">
       <div id="ficheMeta" class="meta">Catégorie – Titre – Version du QR code flashé</div>
+      </div>
+
+      <div id="videoBox" class="video-container hidden">
+  <video id="camera" autoplay playsinline muted></video>
+
+  <!-- overlay de visée -->
+  <div id="scanOverlay" class="scan-overlay hidden">
+    <div class="corner tl"></div>
+    <div class="corner tr"></div>
+    <div class="corner bl"></div>
+    <div class="corner br"></div>
+  </div>
+
+  <div id="successMsg" class="success-msg hidden">✅ QR Code détecté avec succès</div>
+  <div id="cameraError" class="error hidden"></div>
+</div>
+
+<p id="scanHint" class="scan-instructions hidden" data-i18n="scanHint">
+  Cadrez le QR code dans la zone puis cliquez sur « Scanner QR Code ».
+</p>
+
      <p id="scanHint" class="scan-instructions hidden" data-i18n="scanHint">
         Cadrez le QR code dans la zone puis cliquez sur « Scanner QR Code ».
       </p>
