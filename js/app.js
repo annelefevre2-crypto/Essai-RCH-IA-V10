@@ -43,6 +43,21 @@
     setTimeout(() => successMsg.classList.add("hidden"), 1500);
   };
 
+// Références DOM (ajoute ces deux lignes à côté des autres const …)
+const scanHint = document.getElementById("scanHint");
+const scanOverlay = document.getElementById("scanOverlay");
+
+// Helpers
+const showScanUI = () => {
+  if (scanHint) scanHint.classList.remove("hidden");
+  if (scanOverlay) scanOverlay.classList.remove("hidden");
+};
+const hideScanUI = () => {
+  if (scanHint) scanHint.classList.add("hidden");
+  if (scanOverlay) scanOverlay.classList.add("hidden");
+};
+
+  
   // ------------------------------------------------------
   // Caméra via QrScanner
   // ------------------------------------------------------
@@ -76,6 +91,7 @@ async function startCamera() {
       (result) => {
         const data = result?.data || result;
         if (!data) return;
+         hideScanUI();
         stopCamera().finally(() => {
           handleQRContent(data);
           showSuccess();
@@ -99,6 +115,7 @@ async function startCamera() {
     else        { await scanner.start(); }
 
     window.__scanner = scanner;
+    showScanUI();         
     console.log("📷 Caméra activée (pré-permission OK, QrScanner démarré).");
   } catch (e) {
     // Affiche l’erreur réelle (NotAllowedError, NotFoundError, etc.)
@@ -114,6 +131,7 @@ async function stopCamera() {
       await window.__scanner.stop();
       window.__scanner.destroy();
       window.__scanner = null;
+       hideScanUI();
       console.log("📷 Caméra arrêtée.");
     }
   } catch (e) {
@@ -223,6 +241,7 @@ async function stopCamera() {
   // ------------------------------------------------------
   function resetApp() {
     stopCamera();
+     hideScanUI();
     state.qr = null;
     ficheMeta.textContent = "Catégorie – Titre – Version du QR code flashé";
     infosComplementaires.innerHTML = "";
