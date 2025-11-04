@@ -243,7 +243,7 @@ async function stopCamera() {
 
   // Afficher la version de l'application
 document.addEventListener("DOMContentLoaded", () => {
-  const v = "v4.0 Full";
+  const v = "v4.1";
   const span = document.getElementById("appVersion");
   if (span) {
     span.textContent = " — " + v;
