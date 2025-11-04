@@ -281,7 +281,7 @@ async function stopCamera() {
 // 🏷️ Version de l'application
 // ------------------------------------------------------
 document.addEventListener("DOMContentLoaded", () => {
-  const APP_VERSION = "v4.2";
+  const APP_VERSION = "v4.3";
   const span = document.getElementById("appVersion");
   if (span) {
     span.textContent = " — " + APP_VERSION;
