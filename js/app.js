@@ -241,12 +241,14 @@ async function stopCamera() {
   // Init
   resetApp();
 
-  // Afficher la version de l'application
+// ------------------------------------------------------
+// 🏷️ Version de l'application
+// ------------------------------------------------------
 document.addEventListener("DOMContentLoaded", () => {
-  const v = "v4.1";
+  const APP_VERSION = "v4.1";
   const span = document.getElementById("appVersion");
   if (span) {
-    span.textContent = " — " + v;
+    span.textContent = " — " + APP_VERSION;
     span.style.opacity = 0.8;
   }
 });
