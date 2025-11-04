@@ -23,6 +23,23 @@
   const compiledPrompt = document.getElementById("compiledPrompt");
   const iaButtons = document.getElementById("iaButtons");
 
+const videoBox    = document.getElementById("videoBox");
+const scanHint    = document.getElementById("scanHint");
+const scanOverlay = document.getElementById("scanOverlay");
+
+const showScanUI = () => {
+  videoBox?.classList.remove("hidden");
+  scanHint?.classList.remove("hidden");
+  scanOverlay?.classList.remove("hidden");
+};
+const hideScanUI = () => {
+  scanHint?.classList.add("hidden");
+  scanOverlay?.classList.add("hidden");
+  videoBox?.classList.add("hidden");   // <- masque totalement la zone bleue
+};
+
+
+  
   // État applicatif
   let state = { qr: null };
 
