@@ -50,18 +50,51 @@
   };
 
   // ==== CAMERA ====
-  async function startCamera() {
-    hideError();
-    try {
-      const constraints = { video: { facingMode: { ideal: "environment" } }, audio: false };
-      stream = await navigator.mediaDevices.getUserMedia(constraints);
-      videoEl.srcObject = stream;
-      await videoEl.play();
-    } catch (e) {
-      showError(t("cannotAccessCamera"));
-      console.error(e);
+// --- Nouvelle version basée sur QrScanner ---
+async function startCamera() {
+  try {
+    // Détruire instance précédente si elle existe
+    if (window.__scanner) { await window.__scanner.stop(); window.__scanner.destroy(); window.__scanner = null; }
+
+    const QrScanner = window.__QrScanner;
+    const scanner = new QrScanner(videoEl, (result) => {
+      if (result?.data) {
+        handleQRContent(result.data);
+        showSuccess();
+        stopCamera();
+      }
+    }, { highlightScanRegion: true, highlightCodeOutline: true });
+
+    // Sélectionne la caméra arrière si disponible
+    const cameras = await QrScanner.listCameras(true).catch(() => []);
+    if (Array.isArray(cameras) && cameras.length) {
+      const back = cameras.find(c => /back|rear|environment/i.test(c.label)) || cameras[0];
+      await scanner.start(back.id);
+    } else {
+      await scanner.start();
     }
+
+    window.__scanner = scanner;
+    hideError();
+    console.log("📷 Caméra activée et QrScanner démarré");
+  } catch (e) {
+    showError("Erreur caméra : " + e.message);
+    console.error("Erreur QrScanner", e);
   }
+}
+
+async function stopCamera() {
+  try {
+    if (window.__scanner) {
+      await window.__scanner.stop();
+      window.__scanner.destroy();
+      window.__scanner = null;
+      console.log("📷 Caméra arrêtée");
+    }
+  } catch (e) {
+    console.warn("Erreur à l'arrêt caméra", e);
+  }
+}
 
   // ==== DETECTION ====
   async function detectQRCode() {
