@@ -1,114 +1,85 @@
 // ======================================================
-// ⚙️ Application ENSOSP - Mémento IA RCH v4.2
-// Caméra & scan basés sur QrScanner (robuste, multi-navigateurs)
-// - startCamera() / stopCamera() gèrent l'instance QrScanner
-// - "Scanner QR Code" s'assure que le scanner est actif
-// - Import d'image via QrScanner.scanImage
-// - Lecture JSON → champs + prompt IA → boutons IA (fiabilité)
+// Mémento opérationnel IA – RCH (ENSOSP) — app.js v4.1
+// Caméra & scan basés sur QrScanner, UI propre & reset total
 // ======================================================
 
 (() => {
-  const t = (key) => (window.I18N ? I18N.t(key) : key);
+  // ---------- i18n helper ----------
+  const t = (k) => (window.I18N ? I18N.t(k) : k);
 
-  // ==== Références DOM ====
+  // ---------- DOM refs ----------
   const videoEl = document.getElementById("camera");
   const cameraBtn = document.getElementById("cameraBtn");
   const scanBtn = document.getElementById("scanBtn");
   const resetBtn = document.getElementById("resetBtn");
   const qrFile = document.getElementById("qrFile");
+
+  const videoBox = document.getElementById("videoBox");
+  const scanHint = document.getElementById("scanHint");
+  const scanOverlay = document.getElementById("scanOverlay");
+
   const cameraError = document.getElementById("cameraError");
   const successMsg = document.getElementById("successMsg");
+
   const ficheMeta = document.getElementById("ficheMeta");
   const infosComplementaires = document.getElementById("infosComplementaires");
   const compiledPrompt = document.getElementById("compiledPrompt");
   const iaButtons = document.getElementById("iaButtons");
 
-const videoBox    = document.getElementById("videoBox");
-const scanHint    = document.getElementById("scanHint");
-const scanOverlay = document.getElementById("scanOverlay");
-
-const showScanUI = () => {
-  videoBox?.classList.remove("hidden");
-  scanHint?.classList.remove("hidden");
-  scanOverlay?.classList.remove("hidden");
-};
-const hideScanUI = () => {
-  scanHint?.classList.add("hidden");
-  scanOverlay?.classList.add("hidden");
-  videoBox?.classList.add("hidden");   // <- masque totalement la zone bleue
-};
-
-
-  
-  // État applicatif
+  // ---------- State ----------
+  const APP_VERSION = "v4.1";
+  let lastImportedObjectURL = null;
   let state = { qr: null };
 
-  // ------------------------------------------------------
-  // Utils affichage
-  // ------------------------------------------------------
+  // ---------- UI helpers ----------
+  const showEl = (el) => el && el.classList.remove("hidden");
+  const hideEl = (el) => el && el.classList.add("hidden");
+
+  const showScanUI = () => {
+    showEl(videoBox);
+    showEl(scanHint);
+    showEl(scanOverlay);
+  };
+  const hideScanUI = () => {
+    hideEl(scanHint);
+    hideEl(scanOverlay);
+    hideEl(videoBox);
+  };
+
   const showError = (msg) => {
-    if (!cameraError) { alert(msg); return; }
+    if (!cameraError) return alert(msg);
     cameraError.textContent = msg;
-    cameraError.classList.remove("hidden");
+    showEl(cameraError);
   };
-  const hideError = () => {
-    if (cameraError) cameraError.classList.add("hidden");
-  };
+  const hideError = () => hideEl(cameraError);
+
   const showSuccess = () => {
     if (!successMsg) return;
-    successMsg.classList.remove("hidden");
-    setTimeout(() => successMsg.classList.add("hidden"), 1500);
+    showEl(successMsg);
+    setTimeout(() => hideEl(successMsg), 1500);
   };
 
-// Références DOM (ajoute ces deux lignes à côté des autres const …)
-const scanHint = document.getElementById("scanHint");
-const scanOverlay = document.getElementById("scanOverlay");
-
-// Helpers
-const showScanUI = () => {
-  if (scanHint) scanHint.classList.remove("hidden");
-  if (scanOverlay) scanOverlay.classList.remove("hidden");
-};
-const hideScanUI = () => {
-  if (scanHint) scanHint.classList.add("hidden");
-  if (scanOverlay) scanOverlay.classList.add("hidden");
-};
-
-  
-  // ------------------------------------------------------
-  // Caméra via QrScanner
-  // ------------------------------------------------------
-async function startCamera() {
-  hideError();
-  try {
+  // ---------- QrScanner instance ----------
+  async function startScanner(backId) {
     const QrScanner = window.__QrScanner;
     if (!QrScanner) {
-      showError("QrScanner non chargé (vérifie le <script type='module'> dans index.html).");
+      showError("QrScanner non chargé (vérifie le bloc <script type='module'> dans index.html).");
       return;
     }
 
-    // 1) Pré-permission pour déclencher la pop-up (NotAllowedError si refus)
-    const preStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: { ideal: "environment" } },
-      audio: false
-    });
-    // arrêter immédiatement (on ne l'utilise pas directement avec QrScanner)
-    preStream.getTracks().forEach(t => t.stop());
-
-    // 2) Nettoyer une éventuelle instance précédente
     if (window.__scanner) {
       await window.__scanner.stop();
       window.__scanner.destroy();
       window.__scanner = null;
     }
 
-    // 3) Créer le scanner (callback de décodage)
     const scanner = new QrScanner(
       videoEl,
       (result) => {
         const data = result?.data || result;
         if (!data) return;
-         hideScanUI();
+        // Masquer l'UI de scan dès qu'on lit un QR
+        hideScanUI();
         stopCamera().finally(() => {
           handleQRContent(data);
           showSuccess();
@@ -117,71 +88,91 @@ async function startCamera() {
       { highlightScanRegion: true, highlightCodeOutline: true }
     );
 
-    // 4) Lister les caméras après permission (labels disponibles)
-    let backId = null;
-    try {
-      const cams = await QrScanner.listCameras(true);
-      if (Array.isArray(cams) && cams.length) {
-        const back = cams.find(c => /back|rear|environment/i.test(c.label)) || cams[0];
-        backId = back.id;
-      }
-    } catch (_) { /* on tolère l'échec, on démarrera sans id */ }
-
-    // 5) Démarrer le scanner (avec deviceId si dispo)
-    if (backId) { await scanner.start(backId); }
-    else        { await scanner.start(); }
+    if (backId) await scanner.start(backId);
+    else await scanner.start();
 
     window.__scanner = scanner;
-    showScanUI();         
-    console.log("📷 Caméra activée (pré-permission OK, QrScanner démarré).");
-  } catch (e) {
-    // Affiche l’erreur réelle (NotAllowedError, NotFoundError, etc.)
-    const msg = e && e.message ? e.message : String(e);
-    showError("Impossible d'accéder à la caméra : " + msg);
-    console.error("startCamera error:", e);
+    console.log("📷 QrScanner démarré");
   }
-}
 
-async function stopCamera() {
-  try {
-    if (window.__scanner) {
-      await window.__scanner.stop();
-      window.__scanner.destroy();
-      window.__scanner = null;
-       hideScanUI();
-      console.log("📷 Caméra arrêtée.");
+  // ---------- Camera control (pré-permission) ----------
+  function startCamera() {
+    hideError();
+
+    // 1) Pré-permission pour forcer la popup (en user gesture)
+    navigator.mediaDevices
+      .getUserMedia({ video: { facingMode: { ideal: "environment" } }, audio: false })
+      .then(async (preStream) => {
+        // 2) Stop immédiat de ce flux (juste pour permission)
+        preStream.getTracks().forEach((t) => t.stop());
+
+        // 3) Lister les caméras puis démarrer QrScanner
+        const QrScanner = window.__QrScanner;
+        let backId = null;
+        try {
+          const cams = await QrScanner.listCameras(true);
+          if (Array.isArray(cams) && cams.length) {
+            const back = cams.find((c) => /back|rear|environment/i.test(c.label)) || cams[0];
+            backId = back.id;
+          }
+        } catch (_) {}
+
+        await startScanner(backId);
+        showScanUI(); // Affiche zone bleue + consigne + coins
+      })
+      .catch((e) => {
+        const msg = e && e.message ? e.message : String(e);
+        showError("Impossible d'accéder à la caméra : " + msg);
+        console.error("getUserMedia (pré-permission) error:", e);
+      });
+  }
+
+  async function stopCamera() {
+    try {
+      if (window.__scanner) {
+        await window.__scanner.stop();
+        window.__scanner.destroy();
+        window.__scanner = null;
+        console.log("📷 Caméra arrêtée");
+      }
+    } catch (e) {
+      console.warn("Erreur à l'arrêt caméra:", e);
+    } finally {
+      hideScanUI(); // Sécurité
     }
-  } catch (e) {
-    console.warn("Erreur à l'arrêt caméra:", e);
   }
-}
-
 
   // Bouton "Scanner QR Code" : s'assurer que le scanner tourne
   async function detectQRCode() {
     if (!window.__scanner) {
-      await startCamera();
+      startCamera();
     } else {
-      // Si déjà actif, on ne fait rien : le callback décodera dès lecture
-      console.log("🔎 Scan en cours...");
+      // déjà actif, attendre la détection
+      console.log("🔎 Scan en cours…");
     }
   }
 
-  // ------------------------------------------------------
-  // Import d'image (fallback salle / fichier)
-  // ------------------------------------------------------
-  qrFile.addEventListener("change", async (e) => {
+  // ---------- Import d'image (fallback) ----------
+  qrFile?.addEventListener("change", async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
     try {
       const QrScanner = window.__QrScanner;
       if (!QrScanner) {
         showError("QrScanner non chargé (import image indisponible).");
         return;
       }
+
+      // Optionnel : conserver pour <img>.src si tu prévisualises
+      if (lastImportedObjectURL) URL.revokeObjectURL(lastImportedObjectURL);
+      lastImportedObjectURL = URL.createObjectURL(file);
+
       const res = await QrScanner.scanImage(file, { returnDetailedScanResult: true });
       const data = res?.data || res;
       if (!data) return showError(t("noQrInImage"));
+
+      hideScanUI();
       handleQRContent(data);
       showSuccess();
     } catch {
@@ -189,14 +180,12 @@ async function stopCamera() {
     }
   });
 
-  // ------------------------------------------------------
-  // Lecture et interprétation du QR JSON (schéma fiche)
-  // ------------------------------------------------------
+  // ---------- Traitement du QR JSON ----------
   function handleQRContent(raw) {
     let jsonStr = (raw || "").trim();
     try {
       if (jsonStr.startsWith("data:application/json")) {
-        jsonStr = atob(jsonStr.split(",")[1]); // QR encodé en data:URI base64
+        jsonStr = atob(jsonStr.split(",")[1]);
       }
       const obj = JSON.parse(jsonStr);
       state.qr = obj;
@@ -209,10 +198,11 @@ async function stopCamera() {
 
   function updateInterface() {
     if (!state.qr) return;
-    // En-tête méta
+
+    // Méta
     ficheMeta.textContent = `${state.qr.categorie || "–"} – ${state.qr.titre_fiche || "–"} – ${state.qr.version || "–"}`;
 
-    // Bloc infos complémentaires
+    // Infos complémentaires
     const refs = Array.isArray(state.qr.references_bibliographiques)
       ? state.qr.references_bibliographiques.join(", ")
       : "";
@@ -220,23 +210,22 @@ async function stopCamera() {
     const refsTxt = refs ? `<strong>Références :</strong> ${refs}` : "";
     infosComplementaires.innerHTML = `${objectif}${refsTxt}`.trim();
 
-    // Prompt (si déjà fourni dans le QR)
+    // Prompt initial si fourni
     compiledPrompt.value = state.qr.prompt || state.qr.promptTemplate || "";
 
-    // Boutons IA selon cotation
+    // Boutons IA
     renderIABtns();
   }
 
-  // ------------------------------------------------------
-  // Boutons IA (cotation 2 = orange, 3 = vert)
-  // ------------------------------------------------------
+  // ---------- Boutons IA selon cotation ----------
   function renderIABtns() {
     iaButtons.innerHTML = "";
     const table = state.qr?.ia_cotation || state.qr?.ia || {};
     Object.entries(table).forEach(([name, val]) => {
       const meta = typeof val === "number" ? { score: val, label: name } : val;
       const score = Number(meta.score || 0);
-      if (score <= 1) return; // IA non fiable : aucun bouton
+      if (score <= 1) return; // IA non proposée
+
       const b = document.createElement("button");
       b.className = "ia-btn " + (score === 3 ? "green" : "orange");
       b.textContent = (meta.label || name) + (meta.paid ? " " + (t("paidVersion") || "(version payante)") : "");
@@ -246,47 +235,63 @@ async function stopCamera() {
   }
 
   function openIA(meta) {
-    // On compile le prompt actuel (au besoin tu peux enrichir ici)
     const prompt = compiledPrompt.value || "";
-    const url = (meta.url && meta.url.replace("%q%", encodeURIComponent(prompt)))
-      || `https://chat.openai.com/?q=${encodeURIComponent(prompt)}`;
+    const url =
+      (meta.url && meta.url.replace("%q%", encodeURIComponent(prompt))) ||
+      `https://chat.openai.com/?q=${encodeURIComponent(prompt)}`;
     window.open(url, "_blank");
   }
 
-  // ------------------------------------------------------
-  // Réinitialisation complète
-  // ------------------------------------------------------
+  // ---------- Reset total ----------
   function resetApp() {
     stopCamera();
-     hideScanUI();
+    hideScanUI();
+    hideError();
     state.qr = null;
+
+    // Méta & infos
     ficheMeta.textContent = "Catégorie – Titre – Version du QR code flashé";
     infosComplementaires.innerHTML = "";
+
+    // Prompt
     compiledPrompt.value = "";
+
+    // Boutons IA
     iaButtons.innerHTML = "";
-    hideError();
+
+    // Effacer fichier importé
+    if (qrFile) qrFile.value = "";
+
+    // Effacer champs potentiels (si tu en ajoutes dynamiquement ailleurs)
+    document.querySelectorAll("input, textarea, select").forEach((el) => {
+      const id = el.id || "";
+      if (id === "langSel" || id === "qrFile") return;
+      if (el.type === "checkbox") el.checked = false;
+      else if (el.tagName === "SELECT") el.selectedIndex = 0;
+      else el.value = "";
+    });
+
+    if (successMsg) hideEl(successMsg);
+    if (lastImportedObjectURL) {
+      URL.revokeObjectURL(lastImportedObjectURL);
+      lastImportedObjectURL = null;
+    }
   }
 
-  // ------------------------------------------------------
-  // Événements UI
-  // ------------------------------------------------------
-  cameraBtn.addEventListener("click", startCamera);
-  scanBtn.addEventListener("click", detectQRCode);
-  resetBtn.addEventListener("click", resetApp);
+  // ---------- Version UI ----------
+  document.addEventListener("DOMContentLoaded", () => {
+    const span = document.getElementById("appVersion");
+    if (span) {
+      span.textContent = " — " + APP_VERSION;
+      span.style.opacity = 0.85;
+    }
+  });
 
-  // Init
+  // ---------- Events ----------
+  cameraBtn?.addEventListener("click", startCamera);
+  scanBtn?.addEventListener("click", detectQRCode);
+  resetBtn?.addEventListener("click", resetApp);
+
+  // ---------- Init ----------
   resetApp();
-
-// ------------------------------------------------------
-// 🏷️ Version de l'application
-// ------------------------------------------------------
-document.addEventListener("DOMContentLoaded", () => {
-  const APP_VERSION = "v4.3";
-  const span = document.getElementById("appVersion");
-  if (span) {
-    span.textContent = " — " + APP_VERSION;
-    span.style.opacity = 0.8;
-  }
-});
-
 })();
