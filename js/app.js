@@ -1,5 +1,5 @@
 // ======================================================
-// ⚙️ Application ENSOSP - Mémento IA RCH v4.0 Full
+// ⚙️ Application ENSOSP - Mémento IA RCH v4.2
 // Caméra & scan basés sur QrScanner (robuste, multi-navigateurs)
 // - startCamera() / stopCamera() gèrent l'instance QrScanner
 // - "Scanner QR Code" s'assure que le scanner est actif
@@ -264,7 +264,7 @@ async function stopCamera() {
 // 🏷️ Version de l'application
 // ------------------------------------------------------
 document.addEventListener("DOMContentLoaded", () => {
-  const APP_VERSION = "v4.1";
+  const APP_VERSION = "v4.2";
   const span = document.getElementById("appVersion");
   if (span) {
     span.textContent = " — " + APP_VERSION;
