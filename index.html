@@ -2,86 +2,70 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Mémento opérationnel IA – RCH</title>
   <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body>
   <header class="app-header">
     <div class="brand">
-      <img src="assets/logo-ensosp.png" alt="ENSOSP" class="logo"/>
+      <img src="assets/logo-ensosp.png" alt="ENSOSP" class="logo" />
       <div class="titles">
         <h1>Mémento opérationnel IA – RCH</h1>
-        <div class="subtitle">Version <span id="appVersion">V3.7</span></div>
       </div>
     </div>
     <div class="lang-switch">
       <label for="langSel">Lang:</label>
       <select id="langSel">
-        <option value="fr">FR</option>
+        <option value="fr" selected>FR</option>
         <option value="en">EN</option>
       </select>
     </div>
   </header>
 
   <main class="container">
-    <section class="left-col">
-      <div class="control-stack sticky-controls">
-        <button id="resetBtn" class="btn ghost" data-i18n="reset">Réinitialiser</button>
+    <section class="scanner">
+      <p class="scan-instructions" data-i18n="scanHint">
+        Cadrez le QR code dans la zone puis cliquez sur « Scanner QR Code ».
+      </p>
+
+      <div class="video-container">
+        <video id="camera" autoplay playsinline muted></video>
+        <div class="scan-overlay">
+          <div class="corner tl"></div>
+          <div class="corner tr"></div>
+          <div class="corner bl"></div>
+          <div class="corner br"></div>
+        </div>
+        <div id="successMsg" class="success-msg hidden">✅ QR Code détecté avec succès</div>
+        <div id="cameraError" class="error hidden"></div>
+      </div>
+
+      <div class="controls">
         <button id="cameraBtn" class="btn" data-i18n="activateCamera">Activer la caméra</button>
-        <button id="scanBtn" class="btn" data-i18n="captureQr">Capturer QR Code</button>
-        <button id="geoBtn" class="btn" data-i18n="acquirePos">Acquisition de la position</button>
+        <button id="scanBtn" class="btn" data-i18n="captureQr">Scanner QR Code</button>
+        <button id="resetBtn" class="btn ghost" data-i18n="reset">Réinitialiser</button>
       </div>
 
-      <div class="camera-area" id="cameraArea">
-        <div class="scan-hint" data-i18n="scanHint">Cadrez le QR code dans la zone vidéo, puis appuyez sur “Capturer QR Code”.</div>
-        <div class="video-wrap">
-          <video id="camera" autoplay playsinline muted></video>
-          <!-- Fixed, sober corner overlay -->
-          <div class="scan-overlay">
-            <div class="corner tl"></div>
-            <div class="corner tr"></div>
-            <div class="corner bl"></div>
-            <div class="corner br"></div>
-          </div>
-        </div>
-        <div id="cameraError" class="cam-error hidden"></div>
-        <canvas id="qrCanvas" class="hidden"></canvas>
-        <div class="fallback">
-          <label for="qrFile" data-i18n="importImageLabel">Ou importer une image de QR :</label>
-          <input type="file" id="qrFile" accept="image/*" />
-        </div>
+      <div class="import-zone">
+        <label for="qrFile" data-i18n="importImageLabel">Ou importer une image de QR :</label>
+        <input type="file" id="qrFile" accept="image/*" />
       </div>
-
-      <div class="dyn-fields" id="dynamicFields"></div>
     </section>
 
-    <section class="right-col">
-      <div class="meta meta-single-line">
-        <span id="ficheMeta">Catégorie – Titre – Version du QR code flashé</span>
-      </div>
-
-      <div class="info-block">
-        <h2 data-i18n="moreInfo">Informations complémentaires</h2>
-        <div id="infosComplementaires" class="textblock"></div>
-      </div>
-
-      <div class="prompt-block">
-        <h2>Prompt IA</h2>
-        <textarea id="compiledPrompt" class="prompt"></textarea>
-        <div class="action-row">
-          <button id="copyPromptBtn" class="btn ghost" data-i18n="copyPrompt">Copier le prompt</button>
-          <button id="zipBtn" class="btn ghost" title="Crée un paquet local (prompt + pièces jointes)" data-i18n="createZip">Créer le ZIP</button>
-        </div>
-        <div id="iaButtons" class="ia-buttons"></div>
-      </div>
+    <section class="output">
+      <div id="ficheMeta" class="meta">Catégorie – Titre – Version du QR code flashé</div>
+      <div id="infosComplementaires" class="info"></div>
+      <textarea id="compiledPrompt" class="prompt" placeholder="Prompt IA généré…"></textarea>
+      <div id="iaButtons" class="ia-buttons"></div>
     </section>
   </main>
 
   <footer class="app-footer">
-    <div class="footnote">© ENSOSP — Cne Eddy Fischer – Cdt Anne Tirelle</div>
+    © ENSOSP — Cne Eddy Fischer – Cdt Anne Tirelle
   </footer>
 
+  <script src="js/jsqr.min.js"></script>
   <script src="js/i18n.js"></script>
   <script src="js/app.js"></script>
 </body>
