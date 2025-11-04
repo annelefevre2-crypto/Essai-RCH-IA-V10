@@ -25,13 +25,13 @@
 
   <main class="container">
     <section class="scanner">
-      <p class="scan-instructions" data-i18n="scanHint">
+     <p id="scanHint" class="scan-instructions hidden" data-i18n="scanHint">
         Cadrez le QR code dans la zone puis cliquez sur « Scanner QR Code ».
       </p>
 
       <div class="video-container">
         <video id="camera" autoplay playsinline muted></video>
-        <div class="scan-overlay">
+        <div id="scanOverlay" class="scan-overlay hidden">
           <div class="corner tl"></div>
           <div class="corner tr"></div>
           <div class="corner bl"></div>
