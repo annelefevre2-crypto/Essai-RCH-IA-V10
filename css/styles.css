@@ -40,4 +40,195 @@ html, body {
   width: auto;
   object-fit: contain;
   background: #fff;
-  bord
+  border-radius: 8px;
+  padding: 4px;
+}
+
+.titles h1 {
+  font-size: 1.2rem;
+  margin: 0;
+}
+
+.lang-switch label {
+  margin-right: 6px;
+}
+
+.lang-switch select {
+  border-radius: 10px;
+  padding: 6px;
+}
+
+/* ---------- LAYOUT ---------- */
+.container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  padding: 24px;
+}
+
+.scanner, .output {
+  background: var(--panel);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 20px;
+}
+
+/* ---------- VIDEO ---------- */
+.video-container {
+  position: relative;
+  background: #cfe8ff;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+video {
+  width: 100%;
+  border-radius: 12px;
+  display: block;
+  min-height: 240px;
+  background: #e0ecf5;
+}
+
+/* ---------- OVERLAY CORNERS ---------- */
+.scan-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.corner {
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  border-color: var(--blue);
+}
+
+.corner.tl { top: 15px; left: 15px; border-top: 4px solid var(--blue); border-left: 4px solid var(--blue); border-top-left-radius: 8px; }
+.corner.tr { top: 15px; right: 15px; border-top: 4px solid var(--blue); border-right: 4px solid var(--blue); border-top-right-radius: 8px; }
+.corner.bl { bottom: 15px; left: 15px; border-bottom: 4px solid var(--blue); border-left: 4px solid var(--blue); border-bottom-left-radius: 8px; }
+.corner.br { bottom: 15px; right: 15px; border-bottom: 4px solid var(--blue); border-right: 4px solid var(--blue); border-bottom-right-radius: 8px; }
+
+/* ---------- BUTTONS ---------- */
+.controls {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 15px;
+  flex-wrap: wrap;
+}
+
+.btn {
+  appearance: none;
+  border: 0;
+  background: var(--blue);
+  color: #fff;
+  padding: 12px 16px;
+  border-radius: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  transition: 0.2s;
+}
+
+.btn:hover {
+  background: #2538c7;
+}
+
+.btn.ghost {
+  background: #eef2ff;
+  color: #1B2BA0;
+}
+
+/* ---------- STATUS MESSAGES ---------- */
+.error {
+  background: #fee2e2;
+  color: #7f1d1d;
+  border-left: 4px solid #be123c;
+  border-radius: 10px;
+  padding: 8px 10px;
+  margin-top: 10px;
+  font-weight: 600;
+}
+
+.success-msg {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(18, 161, 80, 0.85);
+  color: white;
+  padding: 10px 20px;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: bold;
+  text-align: center;
+  box-shadow: var(--shadow);
+}
+
+.hidden { display: none; }
+
+/* ---------- OUTPUT ---------- */
+.output {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.meta {
+  background: #eef2ff;
+  border-left: 4px solid var(--blue);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-weight: 600;
+}
+
+.prompt {
+  width: 100%;
+  min-height: 160px;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid #d1d5db;
+  resize: vertical;
+}
+
+.ia-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.ia-btn {
+  border: none;
+  color: white;
+  font-weight: 600;
+  border-radius: 20px;
+  padding: 10px 14px;
+}
+
+.ia-btn.green { background: var(--green); }
+.ia-btn.orange { background: var(--orange); }
+
+/* ---------- FOOTER ---------- */
+.app-footer {
+  text-align: center;
+  background: var(--blue);
+  color: #fff;
+  padding: 10px;
+  font-size: 0.9rem;
+  margin-top: 20px;
+}
+
+/* ---------- RESPONSIVE ---------- */
+@media (max-width: 900px) {
+  .container {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    padding: 16px;
+  }
+  .controls {
+    flex-direction: column;
+  }
+  .btn {
+    width: 100%;
+  }
+}
