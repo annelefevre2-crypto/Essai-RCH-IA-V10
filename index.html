@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mémento opérationnel IA – RCH</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand">
+      <img src="assets/logo-ensosp.png" alt="ENSOSP" class="logo"/>
+      <div class="titles">
+        <h1>Mémento opérationnel IA – RCH</h1>
+        <div class="subtitle">Version <span id="appVersion">V3</span></div>
+      </div>
+    </div>
+    <div class="lang-switch">
+      <label for="langSel">Lang:</label>
+      <select id="langSel">
+        <option value="fr">FR</option>
+        <option value="en">EN</option>
+      </select>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="left-col">
+      <div class="control-stack">
+        <button id="resetBtn" class="btn ghost" data-i18n="reset">Réinitialiser</button>
+        <button id="cameraBtn" class="btn" data-i18n="activateCamera">Activer la caméra</button>
+        <button id="scanBtn" class="btn" data-i18n="captureQr">Capturer QR Code</button>
+        <button id="geoBtn" class="btn" data-i18n="acquirePos">Acquisition de la position</button>
+      </div>
+
+      <div class="camera-area" id="cameraArea">
+        <video id="camera" autoplay playsinline></video>
+        <canvas id="qrCanvas" class="hidden"></canvas>
+        <div class="fallback">
+          <label for="qrFile" data-i18n="importImageLabel">Ou importer une image de QR :</label>
+          <input type="file" id="qrFile" accept="image/*" />
+          <textarea id="rawQrInput" placeholder='Collez ici le JSON du QR si nécessaire'></textarea>
+          <button id="parseRawBtn" class="btn ghost small" data-i18n="parseJson">Parser JSON</button>
+        </div>
+      </div>
+
+      <div class="dyn-fields" id="dynamicFields"></div>
+    </section>
+
+    <section class="right-col">
+      <div class="meta">
+        <div class="meta-row">
+          <strong data-i18n="dynamicDisplay">Affichage dynamique&nbsp;:</strong>
+          <span id="ficheMeta">Catégorie – Titre – Version – QR CODE flashé</span>
+        </div>
+      </div>
+
+      <div class="info-block">
+        <h2 data-i18n="moreInfo">Informations complémentaires</h2>
+        <div id="infosComplementaires" class="textblock"></div>
+      </div>
+
+      <div class="prompt-block">
+        <h2>Prompt IA</h2>
+        <textarea id="compiledPrompt" class="prompt"></textarea>
+        <div class="action-row">
+          <button id="copyPromptBtn" class="btn ghost" data-i18n="copyPrompt">Copier le prompt</button>
+          <button id="zipBtn" class="btn ghost" title="Crée un paquet local (prompt + pièces jointes)" data-i18n="createZip">Créer le ZIP</button>
+        </div>
+        <div id="iaButtons" class="ia-buttons"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <div class="footnote">© ENSOSP — Démonstrateur pédagogique (client-side)</div>
+  </footer>
+
+  <script src="js/i18n.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
