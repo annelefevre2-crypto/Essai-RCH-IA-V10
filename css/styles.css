@@ -164,8 +164,7 @@ video {
   text-align: center;
   box-shadow: var(--shadow);
 }
-
-.hidden { display: none; }
+.hidden { display: none !important; }
 
 /* ---------- OUTPUT ---------- */
 .output {
