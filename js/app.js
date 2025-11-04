@@ -1,6 +1,10 @@
 // ======================================================
 // ⚙️ Application ENSOSP - Mémento IA RCH v4.0 Full
-// Détection hybride BarcodeDetector + jsQR
+// Caméra & scan basés sur QrScanner (robuste, multi-navigateurs)
+// - startCamera() / stopCamera() gèrent l'instance QrScanner
+// - "Scanner QR Code" s'assure que le scanner est actif
+// - Import d'image via QrScanner.scanImage
+// - Lecture JSON → champs + prompt IA → boutons IA (fiabilité)
 // ======================================================
 
 (() => {
@@ -19,200 +23,211 @@
   const compiledPrompt = document.getElementById("compiledPrompt");
   const iaButtons = document.getElementById("iaButtons");
 
-  let detector = null;
-  let stream = null;
+  // État applicatif
   let state = { qr: null };
 
-  // ==== UTILITAIRES ====
+  // ------------------------------------------------------
+  // Utils affichage
+  // ------------------------------------------------------
   const showError = (msg) => {
+    if (!cameraError) { alert(msg); return; }
     cameraError.textContent = msg;
     cameraError.classList.remove("hidden");
   };
-  const hideError = () => cameraError.classList.add("hidden");
-
+  const hideError = () => {
+    if (cameraError) cameraError.classList.add("hidden");
+  };
   const showSuccess = () => {
+    if (!successMsg) return;
     successMsg.classList.remove("hidden");
     setTimeout(() => successMsg.classList.add("hidden"), 1500);
   };
 
-  const resetApp = () => {
-    if (stream) {
-      stream.getTracks().forEach((t) => t.stop());
-      stream = null;
-      videoEl.srcObject = null;
-    }
-    ficheMeta.textContent = "Catégorie – Titre – Version du QR code flashé";
-    infosComplementaires.innerHTML = "";
-    compiledPrompt.value = "";
-    iaButtons.innerHTML = "";
+  // ------------------------------------------------------
+  // Caméra via QrScanner
+  // ------------------------------------------------------
+  async function startCamera() {
     hideError();
-    state.qr = null;
-  };
-
-  // ==== CAMERA ====
-// --- Nouvelle version basée sur QrScanner ---
-async function startCamera() {
-  try {
-    // Détruire instance précédente si elle existe
-    if (window.__scanner) { await window.__scanner.stop(); window.__scanner.destroy(); window.__scanner = null; }
-
-    const QrScanner = window.__QrScanner;
-    const scanner = new QrScanner(videoEl, (result) => {
-      if (result?.data) {
-        handleQRContent(result.data);
-        showSuccess();
-        stopCamera();
+    try {
+      const QrScanner = window.__QrScanner;
+      if (!QrScanner) {
+        showError("QrScanner non chargé. Vérifiez le <script type='module'> dans index.html.");
+        return;
       }
-    }, { highlightScanRegion: true, highlightCodeOutline: true });
 
-    // Sélectionne la caméra arrière si disponible
-    const cameras = await QrScanner.listCameras(true).catch(() => []);
-    if (Array.isArray(cameras) && cameras.length) {
-      const back = cameras.find(c => /back|rear|environment/i.test(c.label)) || cameras[0];
-      await scanner.start(back.id);
-    } else {
-      await scanner.start();
-    }
+      // Stop + destroy instance précédente si elle existe
+      if (window.__scanner) {
+        await window.__scanner.stop();
+        window.__scanner.destroy();
+        window.__scanner = null;
+      }
 
-    window.__scanner = scanner;
-    hideError();
-    console.log("📷 Caméra activée et QrScanner démarré");
-  } catch (e) {
-    showError("Erreur caméra : " + e.message);
-    console.error("Erreur QrScanner", e);
-  }
-}
-
-async function stopCamera() {
-  try {
-    if (window.__scanner) {
-      await window.__scanner.stop();
-      window.__scanner.destroy();
-      window.__scanner = null;
-      console.log("📷 Caméra arrêtée");
-    }
-  } catch (e) {
-    console.warn("Erreur à l'arrêt caméra", e);
-  }
-}
-
-  // ==== DETECTION ====
-  async function detectQRCode() {
-    if (!videoEl.srcObject) {
-      showError("Caméra inactive.");
-      return;
-    }
-    hideError();
-    let detected = false;
-
-    // Essayer BarcodeDetector natif
-    if ("BarcodeDetector" in window) {
-      try {
-        detector = new window.BarcodeDetector({ formats: ["qr_code"] });
-        for (let i = 0; i < 80; i++) {
-          const bitmap = await createImageBitmap(videoEl);
-          const codes = await detector.detect(bitmap);
-          if (codes && codes.length > 0) {
-            handleQRContent(codes[0].rawValue);
+      // Créer un nouveau scanner (callback de décodage)
+      const scanner = new QrScanner(
+        videoEl,
+        (result) => {
+          const data = result?.data || result;
+          if (!data) return;
+          // 1er QR lu → fermer caméra, traiter QR, message succès
+          stopCamera().finally(() => {
+            handleQRContent(data);
             showSuccess();
-            detected = true;
-            break;
-          }
-          await new Promise((r) => setTimeout(r, 100));
+          });
+        },
+        {
+          highlightScanRegion: true,
+          highlightCodeOutline: true,
+          // Optionnel: on peut limiter à 30 FPS si besoin (perf)
+          // maxScansPerSecond: 25,
         }
-      } catch (err) {
-        console.warn("BarcodeDetector error, fallback to jsQR", err);
-      }
-    }
+      );
 
-    // Fallback jsQR
-    if (!detected) {
-      const canvas = document.createElement("canvas");
-      const ctx = canvas.getContext("2d");
-      canvas.width = videoEl.videoWidth;
-      canvas.height = videoEl.videoHeight;
-      for (let i = 0; i < 80; i++) {
-        ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
-        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const code = jsQR(imgData.data, imgData.width, imgData.height);
-        if (code) {
-          handleQRContent(code.data);
-          showSuccess();
-          detected = true;
-          break;
-        }
-        await new Promise((r) => setTimeout(r, 100));
+      // Choisir la caméra arrière si dispo
+      const cams = await QrScanner.listCameras(true).catch(() => []);
+      if (Array.isArray(cams) && cams.length) {
+        const back = cams.find((c) => /back|rear|environment/i.test(c.label)) || cams[0];
+        await scanner.start(back.id);
+      } else {
+        await scanner.start();
       }
-    }
 
-    if (!detected) showError("Aucun QR code détecté.");
+      window.__scanner = scanner;
+      console.log("📷 Caméra activée avec QrScanner");
+    } catch (e) {
+      console.error("Erreur startCamera:", e);
+      showError(t("cannotAccessCamera"));
+    }
   }
 
-  // ==== IMPORT D'IMAGE ====
+  async function stopCamera() {
+    try {
+      if (window.__scanner) {
+        await window.__scanner.stop();
+        window.__scanner.destroy();
+        window.__scanner = null;
+        console.log("📷 Caméra arrêtée");
+      }
+    } catch (e) {
+      console.warn("Erreur à l'arrêt caméra:", e);
+    }
+  }
+
+  // Bouton "Scanner QR Code" : s'assurer que le scanner tourne
+  async function detectQRCode() {
+    if (!window.__scanner) {
+      await startCamera();
+    } else {
+      // Si déjà actif, on ne fait rien : le callback décodera dès lecture
+      console.log("🔎 Scan en cours...");
+    }
+  }
+
+  // ------------------------------------------------------
+  // Import d'image (fallback salle / fichier)
+  // ------------------------------------------------------
   qrFile.addEventListener("change", async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const img = new Image();
-    img.src = URL.createObjectURL(file);
-    img.onload = () => {
-      const canvas = document.createElement("canvas");
-      const ctx = canvas.getContext("2d");
-      canvas.width = img.width;
-      canvas.height = img.height;
-      ctx.drawImage(img, 0, 0);
-      const imageData = ctx.getImageData(0, 0, img.width, img.height);
-      const code = jsQR(imageData.data, imageData.width, imageData.height);
-      if (code) {
-        handleQRContent(code.data);
-        showSuccess();
-      } else {
-        showError(t("noQrInImage"));
+    try {
+      const QrScanner = window.__QrScanner;
+      if (!QrScanner) {
+        showError("QrScanner non chargé (import image indisponible).");
+        return;
       }
-    };
+      const res = await QrScanner.scanImage(file, { returnDetailedScanResult: true });
+      const data = res?.data || res;
+      if (!data) return showError(t("noQrInImage"));
+      handleQRContent(data);
+      showSuccess();
+    } catch {
+      showError(t("noQrInImage"));
+    }
   });
 
-  // ==== TRAITEMENT DU QR JSON ====
+  // ------------------------------------------------------
+  // Lecture et interprétation du QR JSON (schéma fiche)
+  // ------------------------------------------------------
   function handleQRContent(raw) {
-    let jsonStr = raw.trim();
+    let jsonStr = (raw || "").trim();
     try {
-      if (raw.startsWith("data:application/json")) {
-        jsonStr = atob(raw.split(",")[1]);
+      if (jsonStr.startsWith("data:application/json")) {
+        jsonStr = atob(jsonStr.split(",")[1]); // QR encodé en data:URI base64
       }
-      const data = JSON.parse(jsonStr);
-      state.qr = data;
+      const obj = JSON.parse(jsonStr);
+      state.qr = obj;
       updateInterface();
     } catch (err) {
-      showError("QR code invalide ou JSON malformé.");
-      console.error(err);
+      console.error("QR/JSON invalide:", err);
+      showError("QR invalide ou JSON mal formé.");
     }
   }
 
   function updateInterface() {
     if (!state.qr) return;
+    // En-tête méta
     ficheMeta.textContent = `${state.qr.categorie || "–"} – ${state.qr.titre_fiche || "–"} – ${state.qr.version || "–"}`;
-    infosComplementaires.innerHTML = `
-      <strong>Objectif :</strong> ${state.qr.objectif || ""}<br>
-      <strong>Références :</strong> ${(state.qr.references_bibliographiques || []).join(", ")}
-    `;
-    compiledPrompt.value = state.qr.prompt || "";
+
+    // Bloc infos complémentaires
+    const refs = Array.isArray(state.qr.references_bibliographiques)
+      ? state.qr.references_bibliographiques.join(", ")
+      : "";
+    const objectif = state.qr.objectif ? `<strong>Objectif :</strong> ${state.qr.objectif}<br>` : "";
+    const refsTxt = refs ? `<strong>Références :</strong> ${refs}` : "";
+    infosComplementaires.innerHTML = `${objectif}${refsTxt}`.trim();
+
+    // Prompt (si déjà fourni dans le QR)
+    compiledPrompt.value = state.qr.prompt || state.qr.promptTemplate || "";
+
+    // Boutons IA selon cotation
     renderIABtns();
   }
 
-  // ==== BOUTONS IA ====
+  // ------------------------------------------------------
+  // Boutons IA (cotation 2 = orange, 3 = vert)
+  // ------------------------------------------------------
   function renderIABtns() {
     iaButtons.innerHTML = "";
-    const table = state.qr.ia_cotation || {};
-    Object.entries(table).forEach(([name, info]) => {
-      const score = typeof info === "number" ? info : info.score;
-      if (score <= 1) return;
-      const btn = document.createElement("button");
-      btn.className = "ia-btn " + (score === 3 ? "green" : "orange");
-      btn.textContent = name + (info.paid ? " " + t("paidVersion") : "");
-      btn.addEventListener("click", () => openIA(name));
-      iaButtons.appendChild(btn);
+    const table = state.qr?.ia_cotation || state.qr?.ia || {};
+    Object.entries(table).forEach(([name, val]) => {
+      const meta = typeof val === "number" ? { score: val, label: name } : val;
+      const score = Number(meta.score || 0);
+      if (score <= 1) return; // IA non fiable : aucun bouton
+      const b = document.createElement("button");
+      b.className = "ia-btn " + (score === 3 ? "green" : "orange");
+      b.textContent = (meta.label || name) + (meta.paid ? " " + (t("paidVersion") || "(version payante)") : "");
+      b.addEventListener("click", () => openIA(meta));
+      iaButtons.appendChild(b);
     });
   }
 
-  function openIA(name) {
-    const prompt = compiledPrompt.value;
-    const url = `https://chat.openai.com/?q=${encodeURICom
+  function openIA(meta) {
+    // On compile le prompt actuel (au besoin tu peux enrichir ici)
+    const prompt = compiledPrompt.value || "";
+    const url = (meta.url && meta.url.replace("%q%", encodeURIComponent(prompt)))
+      || `https://chat.openai.com/?q=${encodeURIComponent(prompt)}`;
+    window.open(url, "_blank");
+  }
+
+  // ------------------------------------------------------
+  // Réinitialisation complète
+  // ------------------------------------------------------
+  function resetApp() {
+    stopCamera();
+    state.qr = null;
+    ficheMeta.textContent = "Catégorie – Titre – Version du QR code flashé";
+    infosComplementaires.innerHTML = "";
+    compiledPrompt.value = "";
+    iaButtons.innerHTML = "";
+    hideError();
+  }
+
+  // ------------------------------------------------------
+  // Événements UI
+  // ------------------------------------------------------
+  cameraBtn.addEventListener("click", startCamera);
+  scanBtn.addEventListener("click", detectQRCode);
+  resetBtn.addEventListener("click", resetApp);
+
+  // Init
+  resetApp();
+})();
