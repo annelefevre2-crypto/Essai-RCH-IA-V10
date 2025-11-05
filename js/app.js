@@ -319,7 +319,7 @@
     hideScanUI();
     hideError();
     state.qr = null;
-    ficheMeta.textContent = "Catégorie – Titre – Version du QR code flashé";
+    ficheMeta.textContent = "Aucune fiche sélectionnée";
     infosComplementaires.innerHTML = "";
     compiledPrompt.value = "";
     iaButtons.innerHTML = "";
