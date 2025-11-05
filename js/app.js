@@ -37,7 +37,7 @@
     Gemini: "https://gemini.google.com/",
     Perplexity: "https://www.perplexity.ai/",
     Deepseek: "https://chat.deepseek.com/",
-    "Le Chat": "https://chat.mistral.ai/chat",
+    Lechat: "https://chat.mistral.ai/chat",
     Grok: "https://grok.com/"
   };
 
