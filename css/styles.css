@@ -170,6 +170,99 @@ button:active { transform: scale(.98); }
   min-height: 120px;
   resize: vertical;
 }
+/* =====================================================
+   Champs dynamiques et zone "Informations complémentaires"
+   ===================================================== */
+
+.form-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+/* Labels */
+.form-fields label {
+  font-weight: 600;
+  color: #1b2ba0;
+  margin-bottom: 0.35rem;
+  font-size: 1rem;
+}
+
+/* Inputs et select */
+.form-fields input,
+.form-fields select {
+  width: 100%;
+  padding: 0.9rem 1rem;
+  border-radius: 10px;
+  border: 2px solid #cdd5ec;
+  background-color: #f9fbff;
+  font-size: 1rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-fields input:focus,
+.form-fields select:focus {
+  border-color: #1b2ba0;
+  box-shadow: 0 0 6px rgba(27, 43, 160, 0.25);
+  outline: none;
+}
+
+/* Zone de texte (informations complémentaires) */
+.form-fields textarea {
+  width: 100%;
+  min-height: 140px;
+  padding: 1rem;
+  border-radius: 10px;
+  border: 2px solid #cdd5ec;
+  background-color: #f4f7fd;
+  font-size: 1.05rem;
+  resize: vertical;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-fields textarea:focus {
+  border-color: #1b2ba0;
+  box-shadow: 0 0 8px rgba(27, 43, 160, 0.25);
+  outline: none;
+}
+
+/* Bouton GPS */
+.gps-btn {
+  flex-shrink: 0;
+  padding: 0.9rem 1rem;
+  background: #1b2ba0;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: background 0.2s ease, transform 0.1s ease;
+}
+
+.gps-btn:hover {
+  background: #14257f;
+}
+
+.gps-btn:active {
+  transform: scale(0.97);
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .form-fields input,
+  .form-fields select,
+  .form-fields textarea {
+    font-size: 1.05rem;
+    padding: 1.1rem;
+  }
+
+  .gps-btn {
+    width: 100%;
+    text-align: center;
+  }
+}
 
 button.gps-btn {
   padding: 0.8rem 1rem;
