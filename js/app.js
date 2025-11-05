@@ -1,3 +1,10 @@
+// ======================================================
+// Mémento opérationnel IA – RCH (ENSOSP) — app.js v4.6.4
+// - Lecture QR JSON -> champs dynamiques, GPS, cotation IA
+// - Champs d'entrée définis UNIQUEMENT dans le QR JSON
+// - Réinitialisation complète (QR / champs / caméra / prompt)
+// ======================================================
+
 (() => {
   // ---------- DOM refs ----------
   const videoEl = document.getElementById("camera");
@@ -22,7 +29,7 @@
   const btnGenerate = document.getElementById("btnGenerate");
 
   // ---------- State ----------
-  const APP_VERSION = "v4.6.3";
+  const APP_VERSION = "v4.6.4";
   let state = { qr: null };
   let lastImportedObjectURL = null;
 
