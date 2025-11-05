@@ -1,70 +1,108 @@
 /* =====================================================
    Mémento opérationnel IA – RCH
-   ENSOSP — Style principal (v4.3, mobile-first)
+   ENSOSP — Style principal (v4.6.2, responsive)
    ===================================================== */
 
 /* Reset & base */
 * { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { height: 100%; }
+html, body { height: 100%; scroll-behavior: smooth; }
 body {
-  font-family: "Poppins", "Segoe UI", Roboto, sans-serif;
+  font-family: "Inter", "Segoe UI", Roboto, sans-serif;
   background: #f7f9fc;
   color: #111;
+  line-height: 1.5;
 }
 .hidden { display: none !important; }
 
-/* Header */
+/* -----------------------------------------------------
+   HEADER
+----------------------------------------------------- */
 header {
-  display: flex; align-items: center; gap: 1rem;
-  background: #1b2ba0; color: #fff; padding: .65rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: #1b2ba0;
+  color: #fff;
+  padding: .7rem 1rem;
 }
 header img { height: 56px; }
-header h1 { font-size: 1.25rem; font-weight: 700; }
+header h1 {
+  font-family: "Montserrat", sans-serif;
+  font-size: 1.3rem;
+  font-weight: 800;
+}
 #langSelect {
-  margin-left: auto; background: #fff; color: #1b2ba0;
-  border: none; border-radius: 8px; padding: .3rem .55rem; font-weight: 600;
+  margin-left: auto;
+  background: #fff;
+  color: #1b2ba0;
+  border: none;
+  border-radius: 8px;
+  padding: .35rem .6rem;
+  font-weight: 600;
+  font-size: .95rem;
 }
 
-/* Layout */
+/* -----------------------------------------------------
+   LAYOUT PRINCIPAL
+----------------------------------------------------- */
 main {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;
-  padding: 1.25rem; max-width: 1200px; margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  padding: 1.25rem;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 @media (max-width: 900px) {
-  main { grid-template-columns: 1fr; padding: 1rem; gap: 1rem; }
+  main {
+    grid-template-columns: 1fr;
+    padding: 1rem;
+    gap: 1rem;
+  }
 }
 
-/* Cards */
+/* -----------------------------------------------------
+   CARTES (blocs principaux)
+----------------------------------------------------- */
 .card {
-  background: #fff; border-radius: 14px; padding: 1rem;
+  background: #fff;
+  border-radius: 14px;
+  padding: 1rem;
   box-shadow: 0 3px 10px rgba(0,0,0,.08);
 }
 
-/* Scan hint */
+/* -----------------------------------------------------
+   SECTION SCAN / VIDÉO
+----------------------------------------------------- */
 #scanHint {
-  text-align: center; color: #1b2ba0; font-weight: 600;
+  text-align: center;
+  color: #1b2ba0;
+  font-weight: 600;
   margin: .25rem 0 .75rem;
 }
 
-/* Video container */
 #videoBox {
-  position: relative; border-radius: 12px; background: #e5f0fa; overflow: hidden;
+  position: relative;
+  border-radius: 12px;
+  background: #e5f0fa;
+  overflow: hidden;
   width: 100%;
-  /* mobile par défaut : environ 62vh pour cadrer confortablement */
   height: 62vh;
-  display: flex; align-items: center; justify-content: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 #camera { width: 100%; height: 100%; object-fit: cover; border-radius: 12px; }
 
-/* Hauteurs ajustées selon contexte */
 @media (min-width: 901px) { #videoBox { height: 360px; } }
 @media (max-width: 600px) and (orientation: landscape) {
-  #videoBox { height: 78vh; } /* paysage mobile : utiliser au max l'écran */
+  #videoBox { height: 78vh; }
 }
 
 /* Overlay de visée */
 #scanOverlay {
-  position: absolute; inset: 8%;
+  position: absolute;
+  inset: 8%;
   border: 2px solid rgba(255,255,255,.9);
   border-radius: 10px;
   box-shadow: 0 0 18px rgba(27,43,160,.45);
@@ -78,220 +116,192 @@ main {
 
 /* Messages */
 #cameraError, #successMsg {
-  margin-top: .7rem; padding: .55rem .8rem; border-radius: 8px; font-size: .95rem;
+  margin-top: .7rem;
+  padding: .55rem .8rem;
+  border-radius: 8px;
+  font-size: .95rem;
 }
 #cameraError { color:#b00020; background:#fde7ea; }
 #successMsg { color:#106b35; background:#e7f7ef; }
 
-/* Actions / boutons */
+/* -----------------------------------------------------
+   ACTIONS / BOUTONS
+----------------------------------------------------- */
 .actions {
   margin-top: .9rem;
-  display: grid; grid-template-columns: repeat(3,1fr); gap: .6rem;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: .6rem;
 }
 @media (max-width: 900px) {
   .actions { grid-template-columns: 1fr; }
 }
 button {
-  cursor: pointer; border: none; border-radius: 10px; font-weight: 700;
+  cursor: pointer;
+  border: none;
+  border-radius: 10px;
+  font-weight: 700;
   transition: transform .15s ease, background .15s ease, opacity .15s ease;
 }
-.btn-lg { padding: .9rem 1rem; font-size: 1rem; }
+.btn-lg { padding: .9rem 1rem; font-size: 1rem; width: 100%; }
 button:active { transform: scale(.98); }
+
 #cameraBtn, #scanBtn { background:#1b2ba0; color:#fff; }
 #cameraBtn:hover, #scanBtn:hover { background:#14257f; }
 .ghost { background:#eef1f8; color:#1b2ba0; }
 .ghost:hover { background:#dee3f2; }
 
+/* Zone d’import image */
 .import-zone {
-  margin-top: .6rem; font-size: .95rem; color:#333;
-  display:flex; align-items:center; gap:.5rem; flex-wrap:wrap;
+  margin-top: .6rem;
+  font-size: .95rem;
+  color:#333;
+  display:flex;
+  align-items:center;
+  gap:.5rem;
+  flex-wrap:wrap;
 }
 
-/* Colonne droite */
+/* -----------------------------------------------------
+   FICHE + FORMULAIRE DYNAMIQUE
+----------------------------------------------------- */
 #ficheMeta {
-  background:#eaf0ff; color:#1b2ba0; font-weight:700;
-  padding:.7rem 1rem; border-radius:10px; margin-bottom:.8rem;
+  background:#eaf0ff;
+  color:#1b2ba0;
+  font-weight:700;
+  padding:.7rem 1rem;
+  border-radius:10px;
+  margin-bottom:.8rem;
 }
-#infosComplementaires { font-size:.95rem; color:#333; margin-bottom:.8rem; }
-#compiledPrompt {
-  width:100%; min-height:180px; border:1px solid #cbd5e1;
-  border-radius:10px; padding:.75rem; font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
-  background:#fafafa; color:#111; resize:vertical;
-}
-.ia-buttons { display:flex; flex-wrap:wrap; gap:.5rem; margin-top:.8rem; }
-.ia-buttons .ia-btn { padding:.6rem .9rem; border-radius:10px; font-weight:700; }
-.ia-buttons .green { background:#1b9e77; color:#fff; }
-.ia-buttons .green:hover { background:#168863; }
-.ia-buttons .orange { background:#e67e22; color:#fff; }
-.ia-buttons .orange:hover { background:#cf6b13; }
-
-
-/* Champs dynamiques – ergonomie améliorée */
-.form-fields {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  margin-top: 1rem;
+#infosComplementaires {
+  font-size:.95rem;
+  color:#333;
+  margin-bottom:.8rem;
 }
 
+/* Champs d’entrée dynamiques */
 .form-fields .field {
-  display: flex;
-  flex-direction: column;
+  margin-bottom: 1rem;
 }
-
 .form-fields label {
+  display: block;
+  margin-bottom: .4rem;
   font-weight: 600;
   color: #1b2ba0;
-  margin-bottom: 0.35rem;
-  font-size: 1rem;
 }
-
 .form-fields input,
-.form-fields select,
-.form-fields textarea {
-  width: 100%;
-  padding: 0.8rem 1rem;
-  border-radius: 10px;
-  border: 2px solid #cdd5ec;
-  background-color: #f9fbff;
-  font-size: 1rem;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.form-fields input:focus,
-.form-fields select:focus,
-.form-fields textarea:focus {
-  border-color: #1b2ba0;
-  box-shadow: 0 0 6px rgba(27, 43, 160, 0.3);
-  outline: none;
-}
-
-.form-fields textarea {
-  min-height: 120px;
-  resize: vertical;
-}
-/* =====================================================
-   Champs dynamiques et zone "Informations complémentaires"
-   ===================================================== */
-
-.form-fields {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  margin-top: 1rem;
-}
-
-/* Labels */
-.form-fields label {
-  font-weight: 600;
-  color: #1b2ba0;
-  margin-bottom: 0.35rem;
-  font-size: 1rem;
-}
-
-/* Inputs et select */
-.form-fields input,
+.form-fields textarea,
 .form-fields select {
   width: 100%;
-  padding: 0.9rem 1rem;
+  padding: .9rem 1rem;
   border-radius: 10px;
-  border: 2px solid #cdd5ec;
-  background-color: #f9fbff;
+  border: 1px solid #cbd5e1;
+  background: #f9fafb;
   font-size: 1rem;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  font-family: inherit;
 }
+.form-fields textarea { resize: vertical; min-height: 80px; }
 
-.form-fields input:focus,
-.form-fields select:focus {
-  border-color: #1b2ba0;
-  box-shadow: 0 0 6px rgba(27, 43, 160, 0.25);
-  outline: none;
-}
-
-/* Zone de texte (informations complémentaires) */
-.form-fields textarea {
+/* Champ "informations complémentaires" toujours présent */
+#extraInfo {
   width: 100%;
-  min-height: 140px;
-  padding: 1rem;
+  min-height: 100px;
+  border: 1px solid #cbd5e1;
   border-radius: 10px;
-  border: 2px solid #cdd5ec;
-  background-color: #f4f7fd;
-  font-size: 1.05rem;
-  resize: vertical;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.form-fields textarea:focus {
-  border-color: #1b2ba0;
-  box-shadow: 0 0 8px rgba(27, 43, 160, 0.25);
-  outline: none;
-}
-
-/* Bouton GPS */
-.gps-btn {
-  flex-shrink: 0;
   padding: 0.9rem 1rem;
-  background: #1b2ba0;
-  color: #fff;
-  border: none;
-  border-radius: 10px;
-  font-weight: 600;
-  cursor: pointer;
-  font-size: 0.95rem;
-  transition: background 0.2s ease, transform 0.1s ease;
-}
-
-.gps-btn:hover {
-  background: #14257f;
-}
-
-.gps-btn:active {
-  transform: scale(0.97);
-}
-
-/* Responsive */
-@media (max-width: 900px) {
-  .form-fields input,
-  .form-fields select,
-  .form-fields textarea {
-    font-size: 1.05rem;
-    padding: 1.1rem;
-  }
-
-  .gps-btn {
-    width: 100%;
-    text-align: center;
-  }
-}
-
-button.gps-btn {
-  padding: 0.8rem 1rem;
-  border: none;
-  border-radius: 10px;
-  background: #1b2ba0;
-  color: #fff;
-  font-weight: 600;
+  background: #f9fafb;
+  margin-bottom: 1rem;
   font-size: 1rem;
-  cursor: pointer;
+}
+
+/* -----------------------------------------------------
+   PROMPT + IA (déplacé colonne gauche sur PC)
+----------------------------------------------------- */
+.prompt-zone {
+  margin-top: 1rem;
+  border-top: 1px solid #e2e8f0;
+  padding-top: 1rem;
+}
+.prompt-zone textarea {
+  width: 100%;
+  min-height: 180px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 0.75rem;
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  background: #fafafa;
+  color: #111;
+  resize: vertical;
+  margin-top: 0.6rem;
+}
+.generate-btn {
+  background: #1b2ba0;
+  color: #fff;
+  width: 100%;
+  font-weight: 700;
+  padding: 0.9rem 1rem;
+  border-radius: 10px;
+  border: none;
   transition: background 0.2s ease;
 }
-button.gps-btn:hover {
+.generate-btn:hover {
   background: #14257f;
 }
 
-@media (max-width: 900px) {
-  .form-fields input,
-  .form-fields select,
-  .form-fields textarea {
-    font-size: 1.05rem;
-    padding: 1rem;
+/* Boutons IA */
+.ia-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 0.8rem;
+}
+.ia-buttons .ia-btn {
+  padding: 0.6rem 0.9rem;
+  border-radius: 10px;
+  font-weight: 700;
+}
+.ia-buttons .green { background: #1b9e77; color: #fff; }
+.ia-buttons .green:hover { background: #168863; }
+.ia-buttons .orange { background: #e67e22; color: #fff; }
+.ia-buttons .orange:hover { background: #cf6b13; }
+
+/* -----------------------------------------------------
+   GPS BUTTON (ajusté pour mobile)
+----------------------------------------------------- */
+.gps-btn {
+  display: inline-block;
+  margin-top: .5rem;
+  background: #1b2ba0;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-weight: 600;
+  padding: .9rem 1.2rem;
+  cursor: pointer;
+  transition: background .2s ease;
+}
+.gps-btn:hover { background: #14257f; }
+@media (max-width: 700px) {
+  .gps-btn {
+    padding: 0.6rem 0.8rem;
+    font-size: 0.85rem;
+    border-radius: 8px;
   }
 }
 
-
-/* Footer */
+/* -----------------------------------------------------
+   FOOTER
+----------------------------------------------------- */
 footer {
-  background:#1b2ba0; color:#fff; text-align:center;
-  padding:.6rem 1rem; font-size:.95rem; margin-top:1rem;
+  background:#1b2ba0;
+  color:#fff;
+  text-align:center;
+  padding:.6rem 1rem;
+  font-size:.95rem;
+  margin-top:1rem;
 }
-footer #appVersion { opacity:.85; font-style:italic; margin-left:.35rem; }
+footer #appVersion {
+  opacity:.85;
+  font-style:italic;
+  margin-left:.35rem;
+}
