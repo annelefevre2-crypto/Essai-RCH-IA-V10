@@ -279,7 +279,7 @@
 
     // Méta
     ficheMeta.textContent =
-      `${state.qr.categorie || "–"} – ${state.qr.titre_fiche || state.qr.titre || "–"} – ${state.qr.version || "–"}`;
+      `${state.qr.categorie || "–"} – ${state.qr.nom_fiche || state.qr.titre || "–"} – ${state.qr.version || "–"}`;
 
     // Infos complémentaires
     const refs = Array.isArray(state.qr.references_bibliographiques)
