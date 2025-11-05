@@ -1,13 +1,13 @@
 // ======================================================
 // Mémento opérationnel IA – RCH (ENSOSP)
-// Version : 4.5
-// Auteur : Cne Eddy Fischer / Cdt Anne Tirelle
+// Version : 4.6
+// Auteurs : Cne Eddy Fischer / Cdt Anne Tirelle
 // ------------------------------------------------------
 // - Scan QR via QrScanner
 // - Lecture JSON dynamique (champs text / number / gps)
 // - Boutons IA selon cotation
-// - Bouton GPS intégré (demande permission navigateur)
-// - Ergonomie renforcée
+// - Bouton GPS intégré
+// - Champ "Informations complémentaires" permanent
 // ======================================================
 
 (() => {
@@ -33,7 +33,7 @@
   const btnGenerate = document.getElementById("btnGenerate");
 
   // ---------- State ----------
-  const APP_VERSION = "v4.5";
+  const APP_VERSION = "v4.6";
   let state = { qr: null };
   let lastImportedObjectURL = null;
 
@@ -87,7 +87,6 @@
     else await scanner.start();
 
     window.__scanner = scanner;
-    console.log("📷 QrScanner démarré");
   }
 
   // ---------- Caméra ----------
@@ -97,7 +96,6 @@
       .getUserMedia({ video: { facingMode: { ideal: "environment" } }, audio: false })
       .then(async (preStream) => {
         preStream.getTracks().forEach((t) => t.stop());
-
         const QrScanner = window.__QrScanner;
         let backId = null;
         try {
@@ -111,8 +109,7 @@
         showScanUI();
       })
       .catch((e) => {
-        const msg = e?.message || String(e);
-        showError("Impossible d'accéder à la caméra : " + msg);
+        showError("Impossible d'accéder à la caméra : " + (e.message || e));
       });
   }
 
@@ -122,13 +119,9 @@
         await window.__scanner.stop();
         window.__scanner.destroy();
         window.__scanner = null;
-        console.log("📷 Caméra arrêtée");
       }
-    } catch (e) {
-      console.warn("Erreur à l'arrêt caméra:", e);
-    } finally {
-      hideScanUI();
-    }
+    } catch (_) {}
+    hideScanUI();
   }
 
   // ---------- Import image ----------
@@ -170,7 +163,6 @@
     fields.forEach(f => {
       const wrap = document.createElement("div");
       wrap.className = "field";
-
       const lab = document.createElement("label");
       lab.textContent = f.label + (f.obligatoire ? " *" : "");
       lab.htmlFor = `fld_${f.id}`;
@@ -192,14 +184,11 @@
 
         const gpsBtn = document.createElement("button");
         gpsBtn.className = "gps-btn";
-        gpsBtn.textContent = "📍 Acquérir la position";
+        gpsBtn.textContent = "📍 Acquérir position";
 
         gpsBtn.onclick = () => {
-          if (!navigator.geolocation) {
-            alert("Géolocalisation non supportée.");
-            return;
-          }
-          gpsBtn.textContent = "⏳ Acquisition…";
+          if (!navigator.geolocation) return alert("Géolocalisation non supportée.");
+          gpsBtn.textContent = "⏳...";
           navigator.geolocation.getCurrentPosition(
             (pos) => {
               const { latitude, longitude, accuracy } = pos.coords;
@@ -207,7 +196,7 @@
               gpsBtn.textContent = "📍 Reprendre";
             },
             (err) => {
-              alert("Erreur de géolocalisation : " + err.message);
+              alert("Erreur géoloc : " + err.message);
               gpsBtn.textContent = "📍 Réessayer";
             },
             { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
@@ -226,9 +215,31 @@
       input.type = f.type === "number" ? "number" : "text";
       input.id = `fld_${f.id}`;
       input.dataset.fieldId = f.id;
+      input.style.width = "100%";
+      input.style.padding = "0.6rem";
+      input.style.fontSize = "1rem";
       wrap.appendChild(input);
       formFields.appendChild(wrap);
     });
+
+    // Ajout champ fixe : Informations complémentaires
+    const infoWrap = document.createElement("div");
+    infoWrap.className = "field";
+    const lab = document.createElement("label");
+    lab.textContent = "Informations complémentaires";
+    infoWrap.appendChild(lab);
+
+    const textarea = document.createElement("textarea");
+    textarea.id = "fld_infos_complementaires";
+    textarea.rows = 3;
+    textarea.placeholder = "Détails, contexte, remarques…";
+    textarea.dataset.fieldId = "infos_complementaires";
+    textarea.style.width = "100%";
+    textarea.style.padding = "0.6rem";
+    textarea.style.fontSize = "1rem";
+
+    infoWrap.appendChild(textarea);
+    formFields.appendChild(infoWrap);
   }
 
   function collectFieldValues() {
@@ -243,7 +254,10 @@
     if (!state.qr) return;
     const tpl = (state.qr.prompt || "").trim();
     const vals = collectFieldValues();
-    const result = tpl.replace(/{{\s*([^}]+)\s*}}/g, (_, k) => vals[k.trim()] || "");
+    let result = tpl.replace(/{{\s*([^}]+)\s*}}/g, (_, k) => vals[k.trim()] || "");
+    if (vals.infos_complementaires) {
+      result += `\n\n# Informations complémentaires\n${vals.infos_complementaires}`;
+    }
     compiledPrompt.value = result;
   }
 
