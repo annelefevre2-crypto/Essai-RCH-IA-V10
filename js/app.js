@@ -271,7 +271,7 @@
     hideError();
 
     state.qr = null;
-    ficheMeta.textContent = "Catégorie – Titre – Version du QR code flashé";
+    ficheMeta.textContent = "Pas de fiche scannée";
     infosComplementaires.innerHTML = "";
     compiledPrompt.value = "";
     iaButtons.innerHTML = "";
