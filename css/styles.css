@@ -171,6 +171,21 @@ button:active { transform: scale(.98); }
   resize: vertical;
 }
 
+button.gps-btn {
+  padding: 0.8rem 1rem;
+  border: none;
+  border-radius: 10px;
+  background: #1b2ba0;
+  color: #fff;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+button.gps-btn:hover {
+  background: #14257f;
+}
+
 @media (max-width: 900px) {
   .form-fields input,
   .form-fields select,
