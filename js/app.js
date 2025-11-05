@@ -291,7 +291,7 @@
 
   function updateInterface() {
     if (!state.qr) return;
-    ficheMeta.textContent = `${state.qr.categorie || "–"} – ${state.qr.titre_fiche || state.qr.titre || "–"} – ${state.qr.version || "–"}`;
+    ficheMeta.textContent = `${state.qr.categorie || "–"} – ${state.qr.nom_fiche || state.qr.titre || "–"} – ${state.qr.version || "–"}`;
     infosComplementaires.innerHTML = `<strong>Objectif :</strong> ${state.qr.objectif || "–"}`;
     compiledPrompt.value = state.qr.prompt || "";
 
