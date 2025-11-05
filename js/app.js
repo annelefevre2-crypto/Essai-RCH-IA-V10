@@ -1,8 +1,13 @@
 // ======================================================
-// Mémento opérationnel IA – RCH (ENSOSP) — app.js v4.5
-// - Lecture QR JSON -> champs dynamiques, GPS, cotation IA
-// - Champs d'entrée définis UNIQUEMENT dans le QR JSON
-// - Réinitialisation complète (QR / champs / caméra / prompt)
+// Mémento opérationnel IA – RCH (ENSOSP)
+// Version : 4.5
+// Auteur : Cne Eddy Fischer / Cdt Anne Tirelle
+// ------------------------------------------------------
+// - Scan QR via QrScanner
+// - Lecture JSON dynamique (champs text / number / gps)
+// - Boutons IA selon cotation
+// - Bouton GPS intégré (demande permission navigateur)
+// - Ergonomie renforcée
 // ======================================================
 
 (() => {
@@ -23,6 +28,7 @@
   const infosComplementaires = document.getElementById("infosComplementaires");
   const compiledPrompt = document.getElementById("compiledPrompt");
   const iaButtons = document.getElementById("iaButtons");
+
   const formFields = document.getElementById("formFields");
   const btnGenerate = document.getElementById("btnGenerate");
 
@@ -52,30 +58,15 @@
     setTimeout(() => hideEl(successMsg), 1500);
   };
 
-  // ---------- Camera ----------
-  async function startCamera() {
-    hideError();
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: "environment" } },
-        audio: false,
-      });
-      stream.getTracks().forEach((t) => t.stop());
-      await startScanner();
-      showScanUI();
-    } catch (e) {
-      showError("Impossible d'accéder à la caméra : " + e.message);
-      console.error("Erreur getUserMedia:", e);
-    }
-  }
-
-  async function startScanner() {
+  // ---------- QRScanner ----------
+  async function startScanner(backId) {
     const QrScanner = window.__QrScanner;
     if (!QrScanner) return showError("QrScanner non chargé.");
 
     if (window.__scanner) {
       await window.__scanner.stop();
       window.__scanner.destroy();
+      window.__scanner = null;
     }
 
     const scanner = new QrScanner(
@@ -92,14 +83,37 @@
       { highlightScanRegion: true, highlightCodeOutline: true }
     );
 
-    const cams = await QrScanner.listCameras(true).catch(() => []);
-    if (Array.isArray(cams) && cams.length) {
-      const back = cams.find((c) => /back|rear|environment/i.test(c.label)) || cams[0];
-      await scanner.start(back.id);
-    } else await scanner.start();
+    if (backId) await scanner.start(backId);
+    else await scanner.start();
 
     window.__scanner = scanner;
     console.log("📷 QrScanner démarré");
+  }
+
+  // ---------- Caméra ----------
+  function startCamera() {
+    hideError();
+    navigator.mediaDevices
+      .getUserMedia({ video: { facingMode: { ideal: "environment" } }, audio: false })
+      .then(async (preStream) => {
+        preStream.getTracks().forEach((t) => t.stop());
+
+        const QrScanner = window.__QrScanner;
+        let backId = null;
+        try {
+          const cams = await QrScanner.listCameras(true);
+          if (Array.isArray(cams) && cams.length) {
+            const back = cams.find((c) => /back|rear|environment/i.test(c.label)) || cams[0];
+            backId = back.id;
+          }
+        } catch (_) {}
+        await startScanner(backId);
+        showScanUI();
+      })
+      .catch((e) => {
+        const msg = e?.message || String(e);
+        showError("Impossible d'accéder à la caméra : " + msg);
+      });
   }
 
   async function stopCamera() {
@@ -108,9 +122,13 @@
         await window.__scanner.stop();
         window.__scanner.destroy();
         window.__scanner = null;
+        console.log("📷 Caméra arrêtée");
       }
-    } catch (_) {}
-    hideScanUI();
+    } catch (e) {
+      console.warn("Erreur à l'arrêt caméra:", e);
+    } finally {
+      hideScanUI();
+    }
   }
 
   // ---------- Import image ----------
@@ -119,149 +137,166 @@
     if (!file) return;
     try {
       const QrScanner = window.__QrScanner;
+      if (!QrScanner) return showError("QrScanner non chargé.");
+      if (lastImportedObjectURL) URL.revokeObjectURL(lastImportedObjectURL);
+      lastImportedObjectURL = URL.createObjectURL(file);
+
       const res = await QrScanner.scanImage(file, { returnDetailedScanResult: true });
       const data = res?.data || res;
-      if (!data) return showError("Aucun QR lisible trouvé dans l'image.");
+      if (!data) return showError("Aucun QR lisible trouvé.");
       hideScanUI();
       handleQRContent(data);
       showSuccess("✅ QR Code détecté avec succès");
     } catch {
-      showError("Aucun QR lisible trouvé dans l'image.");
+      showError("Aucun QR lisible trouvé.");
     }
   });
 
-  // ---------- Analyse QR ----------
-  function handleQRContent(raw) {
-    let jsonStr = (raw || "").trim();
-    try {
-      if (jsonStr.startsWith("data:application/json")) jsonStr = atob(jsonStr.split(",")[1]);
-      const obj = JSON.parse(jsonStr);
-      state.qr = obj;
-      updateInterface();
-    } catch (err) {
-      console.error("QR/JSON invalide:", err);
-      showError("QR invalide ou JSON mal formé.");
-    }
-  }
-
-  // ---------- Interface ----------
-  function updateInterface() {
-    if (!state.qr) return;
-
-    ficheMeta.textContent = `${state.qr.categorie || "–"} – ${state.qr.nom_fiche || state.qr.titre || "–"} – ${state.qr.version || "–"}`;
-
-    const objectif = state.qr.objectif ? `<strong>Objectif :</strong> ${state.qr.objectif}<br>` : "";
-    const refs = state.qr.sources_biblio ? `<strong>Sources :</strong> ${state.qr.sources_biblio}` : "";
-    infosComplementaires.innerHTML = `${objectif}${refs}`.trim();
-
-    renderFields(state.qr.champs_entree || []);
-    renderIABtns();
-    compiledPrompt.value = state.qr.prompt || "";
-    btnGenerate.disabled = false;
-  }
-
   // ---------- Champs dynamiques ----------
+  function extractFields(obj) {
+    const fields = obj?.champs_entree || [];
+    return fields.map(f => ({
+      id: f.nom.toLowerCase().replaceAll(" ", "_"),
+      label: f.nom,
+      type: f.type || "text",
+      obligatoire: f.obligatoire === "O"
+    }));
+  }
+
   function renderFields(fields) {
     formFields.innerHTML = "";
-    fields.forEach((f) => {
+    if (!fields.length) return;
+
+    fields.forEach(f => {
       const wrap = document.createElement("div");
       wrap.className = "field";
 
-      const label = document.createElement("label");
-      label.textContent = f.nom || f.label || f.id || "Champ";
-      wrap.appendChild(label);
+      const lab = document.createElement("label");
+      lab.textContent = f.label + (f.obligatoire ? " *" : "");
+      lab.htmlFor = `fld_${f.id}`;
+      wrap.appendChild(lab);
 
-      let input;
+      // ---- Type GPS ----
       if (f.type === "gps") {
-        input = document.createElement("input");
-        input.type = "text";
-        input.placeholder = "latitude, longitude ±précision";
-        input.classList.add("gps-field");
+        const gpsWrap = document.createElement("div");
+        gpsWrap.style.display = "flex";
+        gpsWrap.style.gap = "0.5rem";
+        gpsWrap.style.alignItems = "center";
 
-        const btn = document.createElement("button");
-        btn.textContent = "📍";
-        btn.type = "button";
-        btn.className = "gps-btn";
-        btn.addEventListener("click", () => getGPS(input));
-        wrap.appendChild(btn);
-      } else {
-        input = document.createElement("input");
-        input.type = f.type === "number" ? "number" : "text";
+        const input = document.createElement("input");
+        input.type = "text";
+        input.placeholder = "lat, lon ± précision";
+        input.id = `fld_${f.id}`;
+        input.dataset.fieldId = f.id;
+        input.style.flex = "1";
+
+        const gpsBtn = document.createElement("button");
+        gpsBtn.className = "gps-btn";
+        gpsBtn.textContent = "📍 Acquérir la position";
+
+        gpsBtn.onclick = () => {
+          if (!navigator.geolocation) {
+            alert("Géolocalisation non supportée.");
+            return;
+          }
+          gpsBtn.textContent = "⏳ Acquisition…";
+          navigator.geolocation.getCurrentPosition(
+            (pos) => {
+              const { latitude, longitude, accuracy } = pos.coords;
+              input.value = `${latitude.toFixed(6)}, ${longitude.toFixed(6)} ±${Math.round(accuracy)}m`;
+              gpsBtn.textContent = "📍 Reprendre";
+            },
+            (err) => {
+              alert("Erreur de géolocalisation : " + err.message);
+              gpsBtn.textContent = "📍 Réessayer";
+            },
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+          );
+        };
+
+        gpsWrap.appendChild(input);
+        gpsWrap.appendChild(gpsBtn);
+        wrap.appendChild(gpsWrap);
+        formFields.appendChild(wrap);
+        return;
       }
 
-      input.dataset.fieldId = f.nom?.toLowerCase().replace(/\s+/g, "_");
-      if (f.obligatoire === "O") input.required = true;
+      // ---- Autres champs ----
+      const input = document.createElement("input");
+      input.type = f.type === "number" ? "number" : "text";
+      input.id = `fld_${f.id}`;
+      input.dataset.fieldId = f.id;
       wrap.appendChild(input);
       formFields.appendChild(wrap);
     });
   }
 
-  // ---------- GPS acquisition ----------
-  function getGPS(inputEl) {
-    if (!navigator.geolocation) return alert("Géolocalisation non supportée.");
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const { latitude, longitude, accuracy } = pos.coords;
-        inputEl.value = `${latitude.toFixed(6)}, ${longitude.toFixed(6)} ±${Math.round(accuracy)}m`;
-      },
-      (err) => alert("Erreur GPS : " + err.message),
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-    );
-  }
-
-  // ---------- Prompt ----------
-  function collectValues() {
+  function collectFieldValues() {
     const vals = {};
-    formFields.querySelectorAll("[data-field-id]").forEach((el) => {
-      vals[el.dataset.fieldId] = el.value.trim();
+    formFields.querySelectorAll("[data-field-id]").forEach(el => {
+      vals[el.dataset.fieldId] = (el.value || "").trim();
     });
     return vals;
   }
 
   function generatePromptFromForm() {
     if (!state.qr) return;
-    let tpl = (state.qr.prompt || "").trim();
-    const vals = collectValues();
-    tpl = tpl.replace(/{{\s*([^}]+)\s*}}/g, (_, key) => vals[key.trim()] || "");
-    compiledPrompt.value = tpl;
+    const tpl = (state.qr.prompt || "").trim();
+    const vals = collectFieldValues();
+    const result = tpl.replace(/{{\s*([^}]+)\s*}}/g, (_, k) => vals[k.trim()] || "");
+    compiledPrompt.value = result;
+  }
+
+  // ---------- Lecture QR ----------
+  function handleQRContent(raw) {
+    try {
+      const obj = JSON.parse(raw);
+      state.qr = obj;
+      updateInterface();
+    } catch {
+      showError("QR invalide ou JSON mal formé.");
+    }
+  }
+
+  function updateInterface() {
+    if (!state.qr) return;
+    ficheMeta.textContent = `${state.qr.categorie || "–"} – ${state.qr.nom_fiche || "–"} – ${state.qr.version || "–"}`;
+    infosComplementaires.innerHTML = `<strong>Objectif :</strong> ${state.qr.objectif || ""}<br><strong>Sources :</strong> ${state.qr.sources_biblio || ""}`;
+    compiledPrompt.value = (state.qr.prompt || "").trim();
+    renderFields(extractFields(state.qr));
+    renderIABtns();
   }
 
   // ---------- Boutons IA ----------
   function renderIABtns() {
     iaButtons.innerHTML = "";
-    const raw = state.qr.cotation_ia || "";
-    const items = raw.split(/\n|,/).map((x) => x.trim()).filter(Boolean);
-
-    items.forEach((entry) => {
-      const [name, val] = entry.split(":").map((s) => s.trim());
-      if (!name || !val) return;
-
-      const paid = val.includes("€");
-      const score = parseInt(val.replace("€", "").trim(), 10);
-      if (score <= 1) return;
-
-      const b = document.createElement("button");
-      b.className = "ia-btn " + (score === 3 ? "green" : "orange");
-      b.textContent = name + (paid ? " (€)" : "");
-      b.addEventListener("click", () => openIA(name));
-      iaButtons.appendChild(b);
+    const cotation = state.qr?.cotation_ia || "";
+    if (!cotation) return;
+    const items = cotation.split(",");
+    items.forEach(it => {
+      const [name, valRaw] = it.split(":").map(s => s.trim());
+      const val = valRaw?.includes("€") ? 3 : parseInt(valRaw, 10);
+      if (isNaN(val) || val < 2) return;
+      const btn = document.createElement("button");
+      btn.className = "ia-btn " + (val === 3 ? "green" : "orange");
+      btn.textContent = name + (valRaw?.includes("€") ? " (€)" : "");
+      btn.onclick = () => openIA(name);
+      iaButtons.appendChild(btn);
     });
   }
 
   function openIA(name) {
-    const prompt = compiledPrompt.value;
-    let url = "";
-    switch (name.toLowerCase()) {
-      case "chatgpt": url = `https://chat.openai.com/?q=${encodeURIComponent(prompt)}`; break;
-      case "claude": url = `https://claude.ai/new?q=${encodeURIComponent(prompt)}`; break;
-      case "gemini": url = `https://gemini.google.com/app?q=${encodeURIComponent(prompt)}`; break;
-      case "perplexity": url = `https://www.perplexity.ai/search?q=${encodeURIComponent(prompt)}`; break;
-      case "deepseek": url = `https://chat.deepseek.com/?q=${encodeURIComponent(prompt)}`; break;
-      case "lechat": url = `https://chat.mistral.ai/chat?q=${encodeURIComponent(prompt)}`; break;
-      case "grok": url = `https://x.com/i/grok?q=${encodeURIComponent(prompt)}`; break;
-      default: url = `https://chat.openai.com/?q=${encodeURIComponent(prompt)}`;
-    }
-    window.open(url, "_blank");
+    const q = encodeURIComponent(compiledPrompt.value);
+    const map = {
+      Chatgpt: "https://chat.openai.com/?q=" + q,
+      Claude: "https://claude.ai/chat?prompt=" + q,
+      Gemini: "https://gemini.google.com/app?query=" + q,
+      Perplexity: "https://www.perplexity.ai/search?q=" + q,
+      Deepseek: "https://chat.deepseek.com/?q=" + q,
+      Lechat: "https://chat.mistral.ai/chat?prompt=" + q,
+      Grok: "https://x.ai/?q=" + q
+    };
+    window.open(map[name] || map.Chatgpt, "_blank");
   }
 
   // ---------- Reset ----------
@@ -269,20 +304,21 @@
     stopCamera();
     hideScanUI();
     hideError();
-
     state.qr = null;
-    ficheMeta.textContent = "Pas de fiche scannée";
+    ficheMeta.textContent = "Catégorie – Titre – Version du QR code flashé";
     infosComplementaires.innerHTML = "";
     compiledPrompt.value = "";
     iaButtons.innerHTML = "";
     formFields.innerHTML = "";
-    if (qrFile) qrFile.value = "";
-
-    hideEl(successMsg);
-    btnGenerate.disabled = true;
-
-    console.log("♻️ Application réinitialisée");
+    qrFile.value = "";
+    if (lastImportedObjectURL) URL.revokeObjectURL(lastImportedObjectURL);
   }
+
+  // ---------- Init ----------
+  document.addEventListener("DOMContentLoaded", () => {
+    const v = document.getElementById("appVersion");
+    if (v) v.textContent = " — " + APP_VERSION;
+  });
 
   // ---------- Events ----------
   cameraBtn?.addEventListener("click", startCamera);
@@ -290,12 +326,4 @@
   resetBtn?.addEventListener("click", resetApp);
   btnGenerate?.addEventListener("click", generatePromptFromForm);
   formFields?.addEventListener("input", generatePromptFromForm);
-
-  document.addEventListener("DOMContentLoaded", () => {
-    const span = document.getElementById("appVersion");
-    if (span) span.textContent = "v4.5";
-  });
-
-  // Init
-  resetApp();
 })();
