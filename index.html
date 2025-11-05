@@ -11,7 +11,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Montserrat:wght@700;800&display=swap" rel="stylesheet">
 
   <!-- Style principal -->
-  <link rel="stylesheet" href="css/styles.css?v=4.5" />
+  <link rel="stylesheet" href="css/styles.css?v=4.6.3" />
 
   <!-- Librairie de scan QR -->
   <script type="module">
@@ -34,60 +34,59 @@
 
   <!-- MAIN -->
   <main>
-    <!-- Colonne gauche (Scan) -->
+    <!-- Colonne gauche : Scan + Prompt/IA -->
     <section class="card">
-      <p id="scanHint" class="hidden">
-        Cadrez le QR code dans la zone puis cliquez sur « Scanner QR Code ».
-      </p>
+      <!-- Aide scan -->
+      <p id="scanHint" class="hidden">Cadrez le QR code dans la zone puis cliquez sur « Scanner QR Code ».</p>
 
+      <!-- Zone caméra -->
       <div id="videoBox" class="hidden">
         <video id="camera" autoplay muted playsinline></video>
         <div id="scanOverlay"></div>
       </div>
 
+      <!-- Messages -->
       <p id="cameraError" class="hidden"></p>
       <p id="successMsg" class="hidden"></p>
 
+      <!-- Actions -->
       <div class="actions">
         <button id="cameraBtn" class="btn-lg">Activer la caméra</button>
         <button id="scanBtn" class="btn-lg">Scanner QR Code</button>
         <button id="resetBtn" class="btn-lg ghost">Réinitialiser</button>
       </div>
 
+      <!-- Import image -->
       <div class="import-zone">
-        <span>Ou importer un QR code :</span>
+        <span>Ou importer une image de QR :</span>
         <input type="file" id="qrFile" accept="image/*" />
-         </div>
-      
-      <div id="ficheMeta">Aucune fiche scannée</div>
       </div>
-        <div id="infosComplementaires"></div>
 
-      <!-- Champs dynamiques issus du QR -->
-      <div id="formFields" class="form-fields"></div>
-    
-    <!-- Colonne droite (Infos / Champs / Prompt) -->
+      <!-- Prompt & IA (déplacé colonne gauche sur PC) -->
+      <div id="promptZone" class="prompt-zone">
+        <button id="btnGenerate" class="generate-btn">Générer le prompt</button>
+        <textarea id="compiledPrompt" placeholder="Prompt IA généré…" readonly></textarea>
+        <div id="iaButtons" class="ia-buttons"></div>
+      </div>
+    </section>
+
+    <!-- Colonne droite : Métadonnées + Champs dynamiques -->
     <section class="card">
-      
-      <textarea id="compiledPrompt" placeholder="Prompt IA généré…" readonly></textarea>
+      <div id="ficheMeta">Catégorie – Titre – Version du QR code flashé</div>
+      <div id="infosComplementaires"></div>
 
-       <button id="btnGenerate" class="btn-lg" style="margin:.6rem 0 .8rem;background:#1b2ba0;color:#fff;" disabled>
-        Générer le prompt
-      </button>
-
-      <!-- Boutons IA générés selon la cotation du JSON -->
-      <div id="iaButtons" class="ia-buttons"></div>
+      <!-- Champs d'entrée dynamiques issus du QR (+ “Informations complémentaires” ajouté par app.js) -->
+      <div id="formFields" class="form-fields"></div>
     </section>
   </main>
-    </section>
 
   <!-- FOOTER -->
   <footer>
     © ENSOSP — Cne Eddy Fischer – Cdt Anne Tirelle
-    <span id="appVersion">v4.5</span>
+    <span id="appVersion"></span>
   </footer>
 
   <!-- Script applicatif -->
-  <script src="js/app.js?v=4.5"></script>
+  <script src="js/app.js?v=4.6.3"></script>
 </body>
 </html>
