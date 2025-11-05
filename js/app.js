@@ -1,5 +1,5 @@
 // ======================================================
-// Mémento opérationnel IA – RCH (ENSOSP) — app.js v4.1
+// Mémento opérationnel IA – RCH (ENSOSP) — app.js v4.3
 // Caméra & scan basés sur QrScanner, UI propre & reset total
 // ======================================================
 
@@ -27,7 +27,7 @@
   const iaButtons = document.getElementById("iaButtons");
 
   // ---------- State ----------
-  const APP_VERSION = "v4.1";
+  const APP_VERSION = "v4.3";
   let lastImportedObjectURL = null;
   let state = { qr: null };
 
