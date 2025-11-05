@@ -8,6 +8,7 @@
   const t = (k) => (window.I18N ? I18N.t(k) : k);
 
   // ---------- DOM refs ----------
+  const APP_VERSION = "v4.3";
   const videoEl = document.getElementById("camera");
   const cameraBtn = document.getElementById("cameraBtn");
   const scanBtn = document.getElementById("scanBtn");
@@ -27,7 +28,7 @@
   const iaButtons = document.getElementById("iaButtons");
 
   // ---------- State ----------
-  const APP_VERSION = "v4.3";
+
   let lastImportedObjectURL = null;
   let state = { qr: null };
 
