@@ -11,7 +11,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Montserrat:wght@700;800&display=swap" rel="stylesheet">
 
   <!-- Style principal -->
-  <link rel="stylesheet" href="css/styles.css?v=4.3.1" />
+  <link rel="stylesheet" href="css/styles.css?v=4.5" />
 
   <!-- Librairie de scan QR -->
   <script type="module">
@@ -36,10 +36,11 @@
   <main>
     <!-- Colonne gauche (Scan) -->
     <section class="card">
-      <p id="scanHint" class="hidden">Cadrez le QR code dans la zone puis cliquez sur « Scanner QR Code ».</p>
+      <p id="scanHint" class="hidden">
+        Cadrez le QR code dans la zone puis cliquez sur « Scanner QR Code ».
+      </p>
 
       <div id="videoBox" class="hidden">
-        <!-- autoplay+muted+playsinline = support mobile/iOS -->
         <video id="camera" autoplay muted playsinline></video>
         <div id="scanOverlay"></div>
       </div>
@@ -59,19 +60,21 @@
       </div>
     </section>
 
-    <!-- Colonne droite (Infos/Champs/Prompt) -->
+    <!-- Colonne droite (Infos / Champs / Prompt) -->
     <section class="card">
       <div id="ficheMeta">Catégorie – Titre – Version du QR code flashé</div>
       <div id="infosComplementaires"></div>
 
-      <!-- Champs d'entrée dynamiques issus du QR -->
+      <!-- Champs dynamiques issus du QR -->
       <div id="formFields" class="form-fields"></div>
-      <button id="btnGenerate" class="btn-lg" style="margin:.6rem 0 .8rem;background:#1b2ba0;color:#fff;">
+
+      <button id="btnGenerate" class="btn-lg" style="margin:.6rem 0 .8rem;background:#1b2ba0;color:#fff;" disabled>
         Générer le prompt
       </button>
 
       <textarea id="compiledPrompt" placeholder="Prompt IA généré…" readonly></textarea>
 
+      <!-- Boutons IA générés selon la cotation du JSON -->
       <div id="iaButtons" class="ia-buttons"></div>
     </section>
   </main>
@@ -79,10 +82,10 @@
   <!-- FOOTER -->
   <footer>
     © ENSOSP — Cne Eddy Fischer – Cdt Anne Tirelle
-    <span id="appVersion"></span>
+    <span id="appVersion">v4.5</span>
   </footer>
 
   <!-- Script applicatif -->
-  <script src="js/app.js?v=4.3.1"></script>
+  <script src="js/app.js?v=4.5"></script>
 </body>
 </html>
