@@ -1,4 +1,4 @@
-# 📘 Mémento opérationnel IA – RCH (V4.0 Full)
+# 📘 Mémento opérationnel IA – RCH (V4.4 )
 
 ## 🚀 Utilisation
 1. Ouvrez la page via **HTTPS** (GitHub Pages ou serveur sécurisé).  
