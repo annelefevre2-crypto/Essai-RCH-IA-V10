@@ -8,7 +8,7 @@
   const t = (k) => (window.I18N ? I18N.t(k) : k);
 
   // ---------- DOM refs ----------
-  const APP_VERSION = "v4.3";
+  const APP_VERSION = "v4.4";
   const videoEl = document.getElementById("camera");
   const cameraBtn = document.getElementById("cameraBtn");
   const scanBtn = document.getElementById("scanBtn");
@@ -257,7 +257,7 @@ function resetApp() {
   state.qr = null;
 
   // 3️⃣ Réinitialiser les métadonnées affichées
-  if (ficheMeta) ficheMeta.textContent = "Catégorie – Titre – Version du QR code flashé";
+  if (ficheMeta) ficheMeta.textContent = "Aucune fiche scannée";
   if (infosComplementaires) infosComplementaires.innerHTML = "";
 
   // 4️⃣ Vider la zone de prompt
