@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Mémento opérationnel IA – RCH</title>
 
-  <!-- ✅ Feuille de style principale -->
-  <link rel="stylesheet" href="css/styles.css?v=4.1">
+  <!-- Style principal -->
+  <link rel="stylesheet" href="css/styles.css?v=4.3" />
 
-  <!-- ✅ Librairie QR Scanner -->
+  <!-- Librairie de scan QR -->
   <script type="module">
     import QrScanner from "https://unpkg.com/qr-scanner@1.4.2/qr-scanner.min.js";
     QrScanner.WORKER_PATH = "https://unpkg.com/qr-scanner@1.4.2/qr-scanner-worker.min.js";
@@ -17,24 +17,25 @@
 </head>
 
 <body>
-  <!-- 🔷 Bandeau supérieur -->
+  <!-- HEADER -->
   <header>
-    <img src="assets/logo-ensosp.png" alt="ENSOSP">
+    <img src="assets/logo-ensosp.png" alt="ENSOSP" />
     <h1>Mémento opérationnel IA – RCH</h1>
-    <select id="langSelect">
+    <select id="langSelect" aria-label="Langue">
       <option value="FR" selected>FR</option>
       <option value="EN">EN</option>
     </select>
   </header>
 
-  <!-- 🧩 Contenu principal -->
+  <!-- MAIN -->
   <main>
-    <!-- 📸 Colonne gauche -->
+    <!-- Colonne gauche (Scan) -->
     <section class="card">
       <p id="scanHint" class="hidden">Cadrez le QR code dans la zone puis cliquez sur « Scanner QR Code ».</p>
 
       <div id="videoBox" class="hidden">
-        <video id="camera" playsinline></video>
+        <!-- autoplay+muted+playsinline = nécessaire sur mobile pour démarrer la vidéo -->
+        <video id="camera" autoplay muted playsinline></video>
         <div id="scanOverlay"></div>
       </div>
 
@@ -42,33 +43,33 @@
       <p id="successMsg" class="hidden"></p>
 
       <div class="actions">
-        <button id="cameraBtn">Activer la caméra</button>
-        <button id="scanBtn">Scanner QR Code</button>
-        <button id="resetBtn">Réinitialiser</button>
+        <button id="cameraBtn" class="btn-lg">Activer la caméra</button>
+        <button id="scanBtn" class="btn-lg">Scanner QR Code</button>
+        <button id="resetBtn" class="btn-lg ghost">Réinitialiser</button>
       </div>
 
-      <p style="margin-top:0.5rem;">
-        Ou importer une image de QR :
-        <input type="file" id="qrFile" accept="image/*">
-      </p>
+      <div class="import-zone">
+        <span>Ou importer une image de QR :</span>
+        <input type="file" id="qrFile" accept="image/*" />
+      </div>
     </section>
 
-    <!-- 🧠 Colonne droite -->
+    <!-- Colonne droite (Infos/Prompt) -->
     <section class="card">
       <div id="ficheMeta">Catégorie – Titre – Version du QR code flashé</div>
       <div id="infosComplementaires"></div>
       <textarea id="compiledPrompt" placeholder="Prompt IA généré…" readonly></textarea>
-      <div id="iaButtons" style="margin-top:1rem;"></div>
+      <div id="iaButtons" class="ia-buttons"></div>
     </section>
   </main>
 
-  <!-- 🔻 Pied de page -->
+  <!-- FOOTER -->
   <footer>
     © ENSOSP — Cne Eddy Fischer – Cdt Anne Tirelle
     <span id="appVersion"></span>
   </footer>
 
-  <!-- ✅ Scripts -->
+  <!-- Scripts -->
   <script src="js/i18n.js"></script>
   <script src="js/app.js"></script>
 </body>
