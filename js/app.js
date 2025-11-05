@@ -1,14 +1,13 @@
 // ======================================================
-// Mémento opérationnel IA – RCH (ENSOSP) — app.js v4.3
-// Caméra & scan basés sur QrScanner, UI propre & reset total
+// Mémento opérationnel IA – RCH (ENSOSP) — app.js v4.3.1
+// - Caméra & scan via QrScanner (pré-permission pour popup)
+// - UI de scan visible seulement caméra active
+// - Lecture QR JSON -> champs dynamiques + compilation {{placeholders}}
+// - Réinitialisation complète (champs / prompt / fichier importé / caméra)
 // ======================================================
 
 (() => {
-  // ---------- i18n helper ----------
-  const t = (k) => (window.I18N ? I18N.t(k) : k);
-
   // ---------- DOM refs ----------
-  const APP_VERSION = "v4.4";
   const videoEl = document.getElementById("camera");
   const cameraBtn = document.getElementById("cameraBtn");
   const scanBtn = document.getElementById("scanBtn");
@@ -27,25 +26,20 @@
   const compiledPrompt = document.getElementById("compiledPrompt");
   const iaButtons = document.getElementById("iaButtons");
 
-  // ---------- State ----------
+  const formFields = document.getElementById("formFields");
+  const btnGenerate = document.getElementById("btnGenerate");
 
-  let lastImportedObjectURL = null;
+  // ---------- State ----------
+  const APP_VERSION = "v4.4";
   let state = { qr: null };
+  let lastImportedObjectURL = null;
 
   // ---------- UI helpers ----------
   const showEl = (el) => el && el.classList.remove("hidden");
   const hideEl = (el) => el && el.classList.add("hidden");
 
-  const showScanUI = () => {
-    showEl(videoBox);
-    showEl(scanHint);
-    showEl(scanOverlay);
-  };
-  const hideScanUI = () => {
-    hideEl(scanHint);
-    hideEl(scanOverlay);
-    hideEl(videoBox);
-  };
+  const showScanUI = () => { showEl(videoBox); showEl(scanHint); showEl(scanOverlay); };
+  const hideScanUI = () => { hideEl(scanHint); hideEl(scanOverlay); hideEl(videoBox); };
 
   const showError = (msg) => {
     if (!cameraError) return alert(msg);
@@ -54,8 +48,9 @@
   };
   const hideError = () => hideEl(cameraError);
 
-  const showSuccess = () => {
+  const showSuccess = (text) => {
     if (!successMsg) return;
+    if (text) successMsg.textContent = text;
     showEl(successMsg);
     setTimeout(() => hideEl(successMsg), 1500);
   };
@@ -79,11 +74,10 @@
       (result) => {
         const data = result?.data || result;
         if (!data) return;
-        // Masquer l'UI de scan dès qu'on lit un QR
         hideScanUI();
         stopCamera().finally(() => {
           handleQRContent(data);
-          showSuccess();
+          showSuccess("✅ QR Code détecté avec succès");
         });
       },
       { highlightScanRegion: true, highlightCodeOutline: true }
@@ -100,14 +94,11 @@
   function startCamera() {
     hideError();
 
-    // 1) Pré-permission pour forcer la popup (en user gesture)
     navigator.mediaDevices
       .getUserMedia({ video: { facingMode: { ideal: "environment" } }, audio: false })
       .then(async (preStream) => {
-        // 2) Stop immédiat de ce flux (juste pour permission)
         preStream.getTracks().forEach((t) => t.stop());
 
-        // 3) Lister les caméras puis démarrer QrScanner
         const QrScanner = window.__QrScanner;
         let backId = null;
         try {
@@ -119,7 +110,7 @@
         } catch (_) {}
 
         await startScanner(backId);
-        showScanUI(); // Affiche zone bleue + consigne + coins
+        showScanUI();
       })
       .catch((e) => {
         const msg = e && e.message ? e.message : String(e);
@@ -139,18 +130,13 @@
     } catch (e) {
       console.warn("Erreur à l'arrêt caméra:", e);
     } finally {
-      hideScanUI(); // Sécurité
+      hideScanUI();
     }
   }
 
-  // Bouton "Scanner QR Code" : s'assurer que le scanner tourne
-  async function detectQRCode() {
-    if (!window.__scanner) {
-      startCamera();
-    } else {
-      // déjà actif, attendre la détection
-      console.log("🔎 Scan en cours…");
-    }
+  function detectQRCode() {
+    if (!window.__scanner) startCamera();
+    else console.log("🔎 Scan en cours…");
   }
 
   // ---------- Import d'image (fallback) ----------
@@ -160,28 +146,120 @@
 
     try {
       const QrScanner = window.__QrScanner;
-      if (!QrScanner) {
-        showError("QrScanner non chargé (import image indisponible).");
-        return;
-      }
+      if (!QrScanner) return showError("QrScanner non chargé (import image indisponible).");
 
-      // Optionnel : conserver pour <img>.src si tu prévisualises
       if (lastImportedObjectURL) URL.revokeObjectURL(lastImportedObjectURL);
       lastImportedObjectURL = URL.createObjectURL(file);
 
       const res = await QrScanner.scanImage(file, { returnDetailedScanResult: true });
       const data = res?.data || res;
-      if (!data) return showError(t("noQrInImage"));
+      if (!data) return showError("Aucun QR lisible trouvé dans l'image.");
 
       hideScanUI();
       handleQRContent(data);
-      showSuccess();
+      showSuccess("✅ QR Code détecté avec succès");
     } catch {
-      showError(t("noQrInImage"));
+      showError("Aucun QR lisible trouvé dans l'image.");
     }
   });
 
-  // ---------- Traitement du QR JSON ----------
+  // ---------- Champs dynamiques & prompt ----------
+  function extractFields(obj) {
+    // champs standards
+    let f = obj?.fields
+      || obj?.champs_entree
+      || obj?.["champs_entree"]
+      || obj?.["champs / données d'entrée"]
+      || obj?.["champs / donnees d'entree"];
+
+    if (!Array.isArray(f)) f = [];
+
+    const aliasMap = {
+      "un": "code_onu",
+      "onu": "code_onu",
+      "cd": "code_danger_adr",
+      "kemler": "code_danger_adr",
+      "name": "nom_produit",
+      "nom": "nom_produit",
+      "cas": "num_cas",
+      "n°cas": "num_cas",
+      "n_cas": "num_cas",
+    };
+
+    return f.map(x => {
+      const idRaw = (x.id || "").toString().trim();
+      const norm = aliasMap[idRaw.toLowerCase()] || idRaw;
+      return {
+        id: norm || idRaw,
+        label: x.label || x.titre || x.name || norm || idRaw,
+        type: (x.type || "text").toLowerCase(),
+        required: !!x.required,
+        options: x.options || []
+      };
+    });
+  }
+
+  function renderFields(fields) {
+    formFields.innerHTML = "";
+    if (!fields.length) return;
+
+    fields.forEach(f => {
+      const wrap = document.createElement("div");
+      wrap.className = "field";
+
+      const lab = document.createElement("label");
+      lab.htmlFor = `fld_${f.id}`;
+      lab.textContent = f.label;
+      wrap.appendChild(lab);
+
+      let input;
+      if (f.type === "textarea") { input = document.createElement("textarea"); input.rows = 3; }
+      else if (f.type === "number") { input = document.createElement("input"); input.type = "number"; }
+      else if (f.type === "select") {
+        input = document.createElement("select");
+        (f.options || []).forEach(opt => {
+          const o = document.createElement("option"); o.value = opt; o.textContent = opt; input.appendChild(o);
+        });
+      } else {
+        input = document.createElement("input"); input.type = "text";
+      }
+
+      input.id = `fld_${f.id}`;
+      input.dataset.fieldId = f.id;
+      wrap.appendChild(input);
+      formFields.appendChild(wrap);
+    });
+  }
+
+  function collectFieldValues() {
+    const vals = {};
+    formFields.querySelectorAll("[data-field-id]").forEach(el => {
+      const k = el.dataset.fieldId;
+      let v;
+      if (el.type === "checkbox") v = el.checked ? "oui" : "non";
+      else v = (el.value || "").trim();
+      vals[k] = v;
+    });
+    return vals;
+  }
+
+  function generatePromptFromForm() {
+    if (!state.qr) return;
+
+    let tpl = (state.qr.prompt || state.qr.promptTemplate || "").trim();
+    if (!tpl) { compiledPrompt.value = ""; return; }
+
+    const vals = collectFieldValues();
+
+    tpl = tpl.replace(/{{\s*([^}]+)\s*}}/g, (_, keyRaw) => {
+      const key = keyRaw.trim();
+      return (vals[key] ?? "");
+    });
+
+    compiledPrompt.value = tpl;
+  }
+
+  // ---------- QR -> UI ----------
   function handleQRContent(raw) {
     let jsonStr = (raw || "").trim();
     try {
@@ -201,7 +279,8 @@
     if (!state.qr) return;
 
     // Méta
-    ficheMeta.textContent = `${state.qr.categorie || "–"} – ${state.qr.titre_fiche || "–"} – ${state.qr.version || "–"}`;
+    ficheMeta.textContent =
+      `${state.qr.categorie || "–"} – ${state.qr.titre_fiche || state.qr.titre || "–"} – ${state.qr.version || "–"}`;
 
     // Infos complémentaires
     const refs = Array.isArray(state.qr.references_bibliographiques)
@@ -211,25 +290,36 @@
     const refsTxt = refs ? `<strong>Références :</strong> ${refs}` : "";
     infosComplementaires.innerHTML = `${objectif}${refsTxt}`.trim();
 
-    // Prompt initial si fourni
-    compiledPrompt.value = state.qr.prompt || state.qr.promptTemplate || "";
+    // Prompt “brut”
+    compiledPrompt.value = (state.qr.prompt || state.qr.promptTemplate || "").trim();
+
+    // Champs dynamiques (fields ou placeholders)
+    let flds = extractFields(state.qr);
+    if (!flds.length) {
+      const ph = Array.from((compiledPrompt.value || "").matchAll(/{{\s*([^}]+)\s*}}/g)).map(m => m[1].trim());
+      const uniq = [...new Set(ph)];
+      if (uniq.length) {
+        flds = uniq.map(k => ({ id: k, label: k.toUpperCase().replaceAll("_", " "), type: "text" }));
+      }
+    }
+    renderFields(flds);
 
     // Boutons IA
     renderIABtns();
   }
 
-  // ---------- Boutons IA selon cotation ----------
+  // ---------- Boutons IA ----------
   function renderIABtns() {
     iaButtons.innerHTML = "";
     const table = state.qr?.ia_cotation || state.qr?.ia || {};
     Object.entries(table).forEach(([name, val]) => {
       const meta = typeof val === "number" ? { score: val, label: name } : val;
       const score = Number(meta.score || 0);
-      if (score <= 1) return; // IA non proposée
+      if (score <= 1) return; // non proposé
 
       const b = document.createElement("button");
       b.className = "ia-btn " + (score === 3 ? "green" : "orange");
-      b.textContent = (meta.label || name) + (meta.paid ? " " + (t("paidVersion") || "(version payante)") : "");
+      b.textContent = (meta.label || name) + (meta.paid ? " (version payante)" : "");
       b.addEventListener("click", () => openIA(meta));
       iaButtons.appendChild(b);
     });
@@ -244,70 +334,45 @@
   }
 
   // ---------- Reset total ----------
-// ------------------------------------------------------
-// 🔄 Réinitialisation complète de l'application
-// ------------------------------------------------------
-function resetApp() {
-  // 1️⃣ Arrêter la caméra et masquer la zone de scan
-  stopCamera();
-  hideScanUI();
-  hideError();
+  function resetApp() {
+    stopCamera();
+    hideScanUI();
+    hideError();
 
-  // 2️⃣ Réinitialiser les variables d'état
-  state.qr = null;
+    state.qr = null;
 
-  // 3️⃣ Réinitialiser les métadonnées affichées
-  if (ficheMeta) ficheMeta.textContent = "Aucune fiche scannée";
-  if (infosComplementaires) infosComplementaires.innerHTML = "";
+    ficheMeta.textContent = "Aucune fiche scannée";
+    infosComplementaires.innerHTML = "";
+    compiledPrompt.value = "";
+    iaButtons.innerHTML = "";
+    formFields.innerHTML = "";
 
-  // 4️⃣ Vider la zone de prompt
-  if (compiledPrompt) compiledPrompt.value = "";
+    // Vider tous les champs (sauf la langue)
+    document.querySelectorAll("input, textarea, select").forEach((el) => {
+      const id = el.id || "";
+      if (id === "langSelect" || id === "qrFile") return;
+      if (el.type === "checkbox") el.checked = false;
+      else if (el.tagName === "SELECT") el.selectedIndex = 0;
+      else el.value = "";
+    });
 
-  // 5️⃣ Supprimer les boutons IA générés
-  if (iaButtons) iaButtons.innerHTML = "";
+    if (qrFile) qrFile.value = "";
 
-  // 6️⃣ Effacer le contenu des champs d’entrée du formulaire
-  document.querySelectorAll("input, textarea, select").forEach((el) => {
-    const id = el.id || "";
-    // On ne vide pas le sélecteur de langue
-    if (id === "langSel") return;
+    if (lastImportedObjectURL) {
+      URL.revokeObjectURL(lastImportedObjectURL);
+      lastImportedObjectURL = null;
+    }
 
-    // Réinitialisation spécifique selon le type
-    if (el.type === "checkbox") el.checked = false;
-    else if (el.tagName === "SELECT") el.selectedIndex = 0;
-    else el.value = "";
-  });
-
-  // 7️⃣ Effacer la sélection de fichier QR (import image)
-  const fileInputs = [
-    document.getElementById("qrFile"),
-    document.getElementById("fileInput")
-  ].filter(Boolean);
-  fileInputs.forEach(input => input.value = "");
-
-  // 8️⃣ Révoquer un éventuel ObjectURL d’image importée
-  if (lastImportedObjectURL) {
-    URL.revokeObjectURL(lastImportedObjectURL);
-    lastImportedObjectURL = null;
+    hideEl(successMsg);
+    console.log("♻️ Application réinitialisée");
   }
-
-  // 9️⃣ Masquer les messages temporaires
-  if (successMsg) hideEl(successMsg);
-
-  console.log("♻️ Application réinitialisée");
-}
-setTimeout(() => {
-  showSuccess();
-  successMsg.textContent = "✅ Interface réinitialisée";
-}, 150);
-
 
   // ---------- Version UI ----------
   document.addEventListener("DOMContentLoaded", () => {
     const span = document.getElementById("appVersion");
     if (span) {
       span.textContent = " — " + APP_VERSION;
-      span.style.opacity = 0.85;
+      span.style.opacity = 0.9;
     }
   });
 
@@ -315,6 +380,8 @@ setTimeout(() => {
   cameraBtn?.addEventListener("click", startCamera);
   scanBtn?.addEventListener("click", detectQRCode);
   resetBtn?.addEventListener("click", resetApp);
+  btnGenerate?.addEventListener("click", generatePromptFromForm);
+  formFields?.addEventListener("input", () => { generatePromptFromForm(); });
 
   // ---------- Init ----------
   resetApp();
